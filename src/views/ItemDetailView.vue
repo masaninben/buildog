@@ -70,21 +70,12 @@
 
         <!-- 右カラム: マップ → 手放し → アシスト → メモ -->
         <div class="col-right">
-          <!-- 所有分布マップ（準備中） -->
+          <!-- 所有分布マップ -->
           <div class="map-card">
             <div class="map-header">
               <span class="map-title">所有分布マップ</span>
-              <span class="map-badge">準備中</span>
             </div>
-            <div class="map-placeholder">
-              <div class="map-dots" aria-hidden="true">
-                <span v-for="i in 80" :key="i" class="map-dot" :style="{ opacity: Math.random() * 0.5 + 0.05 }" />
-              </div>
-              <div class="map-overlay-content">
-                <span class="map-icon">🗾</span>
-                <p class="map-coming-text">居住地を中心に所有者の分布を表示</p>
-              </div>
-            </div>
+            <OwnershipMap :product-id="item.productId" />
           </div>
 
           <!-- アクション -->
@@ -173,6 +164,7 @@ import { store } from '../store/shelf'
 import { productStore } from '../store/products'
 import { authState } from '../lib/auth'
 import PhotoUpload from '../components/PhotoUpload.vue'
+import OwnershipMap from '../components/OwnershipMap.vue'
 import type { ShelfItem } from '../types'
 
 const route = useRoute()
@@ -698,73 +690,13 @@ async function doDelete() {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .map-title {
   font-size: 14px;
   font-weight: 700;
   color: var(--text);
-  flex: 1;
-}
-
-.map-badge {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-faint);
-  background: var(--bg-surface);
-  padding: 2px 8px;
-  border-radius: 10px;
-  letter-spacing: 0.04em;
-}
-
-.map-placeholder {
-  position: relative;
-  height: 80px;
-  background: var(--bg-surface);
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.map-dots {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 2px;
-  padding: 8px;
-}
-
-.map-dot {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-.map-overlay-content {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-}
-
-.map-icon {
-  font-size: 18px;
-  margin-right: 8px;
-  opacity: 0.4;
-}
-
-.map-coming-text {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-sub);
-  margin: 0;
 }
 
 .not-found {

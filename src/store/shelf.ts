@@ -41,7 +41,10 @@ interface ProductPayload {
   externalSource?: string
 }
 
-async function syncToProductsDB(payload: ProductPayload): Promise<string | null> {
+async function syncToProductsDB(
+  payload: ProductPayload,
+  location?: { prefecture: string; city: string },
+): Promise<string | null> {
   try {
     let productRef: ReturnType<typeof doc>
 
@@ -53,6 +56,9 @@ async function syncToProductsDB(payload: ProductPayload): Promise<string | null>
     } else if (payload.isbn) {
       productRef = doc(db, 'products', `isbn_${payload.isbn}`)
     } else {
+      const locationCounts = location?.prefecture && location?.city
+        ? { [`${location.prefecture}__${location.city}`]: 1 }
+        : {}
       const ref = await addDoc(collection(db, 'products'), {
         name: payload.name,
         creator: payload.creator,
@@ -61,13 +67,21 @@ async function syncToProductsDB(payload: ProductPayload): Promise<string | null>
         isbn: '',
         externalSource: '',
         ownerCount: 1,
+        locationCounts,
         createdAt: serverTimestamp(),
       })
       return ref.id
     }
 
     const snap = await getDoc(productRef)
+    const locationUpdate = location?.prefecture && location?.city
+      ? { [`locationCounts.${location.prefecture}__${location.city}`]: increment(1) }
+      : {}
+
     if (!snap.exists()) {
+      const locationCounts = location?.prefecture && location?.city
+        ? { [`${location.prefecture}__${location.city}`]: 1 }
+        : {}
       await setDoc(productRef, {
         name: payload.name,
         creator: payload.creator,
@@ -77,6 +91,7 @@ async function syncToProductsDB(payload: ProductPayload): Promise<string | null>
         janCode: payload.janCode ?? '',
         externalSource: payload.externalSource ?? '',
         ownerCount: 1,
+        locationCounts,
         createdAt: serverTimestamp(),
       })
     } else {
@@ -86,6 +101,7 @@ async function syncToProductsDB(payload: ProductPayload): Promise<string | null>
         imageUrl: payload.imageUrl,
         category: payload.category,
         ownerCount: increment(1),
+        ...locationUpdate,
       })
     }
     return productRef.id
@@ -149,7 +165,12 @@ export const store = {
     const uid = authState.user?.uid
     if (!uid) return
 
-    const productId = await syncToProductsDB(payload)
+    const { userProfileStore } = await import('./userProfile')
+    const p = userProfileStore.profile
+    const location = p?.prefecture && p?.city
+      ? { prefecture: p.prefecture, city: p.city }
+      : undefined
+    const productId = await syncToProductsDB(payload, location)
 
     await addDoc(itemsRef(uid), {
       name: payload.name,
