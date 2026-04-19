@@ -206,255 +206,104 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.products-view {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 28px 24px 64px;
-}
+.products-view { max-width: 1000px; margin: 0 auto; padding: 28px 24px 64px; }
 
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
+.page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 
-.page-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #2c2315;
-}
+.page-title { font-size: 18px; font-weight: 700; color: var(--text); }
 
 .badge {
-  background: #f0ece4;
-  color: #8b6914;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
 }
 
-/* 検索 */
 .search-row { margin-bottom: 14px; }
 
 .search-input {
-  width: 100%;
-  height: 42px;
-  padding: 0 14px;
-  border: 1.5px solid #e0dbd0;
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: inherit;
-  color: #2c2315;
-  background: #fff;
-  outline: none;
-  transition: border-color 0.15s;
-  box-sizing: border-box;
+  width: 100%; height: 42px; padding: 0 14px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 14px; font-family: inherit; color: var(--text); background: var(--bg-card);
+  outline: none; transition: border-color 0.15s; box-sizing: border-box;
 }
-.search-input:focus { border-color: #8b6914; }
+.search-input:focus { border-color: var(--accent); }
 
-/* ツールバー */
 .toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 8px 0;
-  border-bottom: 1px solid #f0ece4;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 20px; padding: 8px 0; border-bottom: 1px solid var(--border-subtle);
 }
 
 .filter-pills {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow-x: auto;
-  flex: 1;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  padding-bottom: 2px;
+  display: flex; align-items: center; gap: 6px; overflow-x: auto; flex: 1;
+  scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 2px;
 }
 .filter-pills::-webkit-scrollbar { display: none; }
 
 .pill {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 28px;
-  padding: 0 12px;
-  border: 1.5px solid #e0dbd0;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  font-family: inherit;
-  color: #a09070;
-  background: #fff;
-  cursor: pointer;
-  white-space: nowrap;
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;
+  height: 28px; padding: 0 12px; border: 1.5px solid var(--border); border-radius: 20px;
+  font-size: 11px; font-weight: 600; font-family: inherit; color: var(--text-muted);
+  background: var(--bg-subtle); cursor: pointer; white-space: nowrap;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.pill:hover { border-color: #8b6914; color: #8b6914; }
-.pill.active { background: #8b6914; border-color: #8b6914; color: #fff; }
+.pill:hover { border-color: var(--accent); color: var(--accent); }
+.pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .pill-count { font-size: 10px; opacity: 0.75; }
 
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
+.toolbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
 .sort-select {
-  height: 28px;
-  padding: 0 8px;
-  border: 1.5px solid #e0dbd0;
-  border-radius: 6px;
-  font-size: 11px;
-  font-family: inherit;
-  color: #6b5a3a;
-  background: #fff;
-  outline: none;
-  cursor: pointer;
+  height: 28px; padding: 0 8px; border: 1.5px solid var(--border); border-radius: 6px;
+  font-size: 11px; font-family: inherit; color: var(--text-sub); background: var(--bg-card);
+  outline: none; cursor: pointer;
 }
 
-.size-btns {
-  display: flex;
-  gap: 2px;
-  background: #f0ece4;
-  border-radius: 6px;
-  padding: 2px;
-}
+.size-btns { display: flex; gap: 2px; background: var(--bg-surface); border-radius: 6px; padding: 2px; }
 
 .size-btn {
-  width: 28px;
-  height: 24px;
-  border: none;
-  border-radius: 4px;
-  font-size: 9px;
-  font-family: monospace;
-  color: #a09070;
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-  letter-spacing: -1px;
+  width: 28px; height: 24px; border: none; border-radius: 4px; font-size: 9px;
+  font-family: monospace; color: var(--text-muted); background: transparent;
+  cursor: pointer; transition: background 0.12s, color 0.12s; letter-spacing: -1px;
 }
-.size-btn.active { background: #fff; color: #8b6914; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.size-btn.active { background: var(--bg-card); color: var(--accent); box-shadow: var(--shadow-sm); }
 
-/* 状態 */
-.state-msg {
-  text-align: center;
-  padding: 48px 0;
-  font-size: 13px;
-  color: #b0a090;
-}
+.state-msg { text-align: center; padding: 48px 0; font-size: 13px; color: var(--text-faint); }
+.state-empty { padding: 48px 0; text-align: center; font-size: 13px; color: var(--text-faint); }
 
-.state-empty {
-  padding: 48px 0;
-  text-align: center;
-  font-size: 13px;
-  color: #b0a090;
-}
-
-/* カードグリッド */
-.cards-grid {
-  display: grid;
-  gap: 12px;
-}
+.cards-grid { display: grid; gap: 12px; }
 
 .product-card {
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  overflow: hidden;
-  cursor: pointer;
+  background: var(--bg-card); border-radius: 10px; box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-faint); overflow: hidden; cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
 }
-.product-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-}
+.product-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
 .card-img-wrap {
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  background: #f0ece4;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100%; aspect-ratio: 3 / 4; background: var(--bg-surface);
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
 }
-
 .card-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-.card-img-empty {
-  width: 100%;
-  height: 100%;
-  background: #ede8e0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
+.card-img-empty { width: 100%; height: 100%; background: var(--bg-subtle); display: flex; align-items: center; justify-content: center; }
 .card-img-emoji { font-size: 28px; opacity: 0.4; }
 
 .card-body { padding: 8px 10px 10px; }
 
 .card-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: #2c2315;
-  line-height: 1.4;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  margin-bottom: 2px;
+  font-size: 11px; font-weight: 600; color: var(--text); line-height: 1.4;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-bottom: 2px;
 }
+.card-creator { font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
 
-.card-creator {
-  font-size: 10px;
-  color: #a09070;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 6px;
-}
-
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-}
+.card-footer { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 
 .card-cat {
-  font-size: 9px;
-  font-weight: 600;
-  color: #8b6914;
-  background: #fdf3dc;
-  padding: 2px 6px;
-  border-radius: 10px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 75%;
+  font-size: 9px; font-weight: 600; color: var(--accent); background: var(--accent-bg-dim);
+  padding: 2px 6px; border-radius: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75%;
 }
 
-.card-badges {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-}
+.card-badges { display: flex; gap: 4px; flex-shrink: 0; }
 
-.card-owners, .card-img-count {
-  font-size: 9px;
-  color: #b0a090;
-  white-space: nowrap;
-}
-
-.card-img-count {
-  color: #4f65d2;
-  font-weight: 600;
-}
+.card-owners, .card-img-count { font-size: 9px; color: var(--text-faint); white-space: nowrap; }
+.card-img-count { color: var(--digital); font-weight: 600; }
 </style>

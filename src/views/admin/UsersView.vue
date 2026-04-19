@@ -173,229 +173,72 @@ async function updateRole(uid: string, role: UserRole) {
 </script>
 
 <style scoped>
-.users-view {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 24px 24px 64px;
-}
+.users-view { max-width: 900px; margin: 0 auto; padding: 24px 24px 64px; }
 
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
+.page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.page-title { font-size: 18px; font-weight: 700; color: var(--text); }
+.badge { background: var(--accent-bg); color: var(--accent); font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
 
-.page-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #2c2315;
-}
-
-.badge {
-  background: #f0ece4;
-  color: #8b6914;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-}
-
-/* 権限説明 */
 .role-legend {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  background: #fff;
-  border-radius: 10px;
-  padding: 14px 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  margin-bottom: 20px;
+  display: flex; gap: 16px; flex-wrap: wrap; background: var(--bg-card);
+  border-radius: 10px; padding: 14px 20px; box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-faint); margin-bottom: 20px;
 }
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend-desc { font-size: 11px; color: var(--text-faint); white-space: nowrap; }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.legend-desc {
-  font-size: 11px;
-  color: #b0a090;
-  white-space: nowrap;
-}
-
-/* ユーザーカード */
-.state-msg {
-  text-align: center;
-  padding: 48px 0;
-  font-size: 13px;
-  color: #b0a090;
-}
-
-.users-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.state-msg { text-align: center; padding: 48px 0; font-size: 13px; color: var(--text-faint); }
+.users-list { display: flex; flex-direction: column; gap: 12px; }
 
 .user-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-  overflow: hidden;
+  background: var(--bg-card); border-radius: 12px; box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-faint); overflow: hidden;
 }
+.user-card.is-me { border-color: var(--border-accent); }
 
-.user-card.is-me {
-  border: 2px solid rgba(139, 105, 20, 0.25);
-}
-
-/* カードヘッダー */
 .card-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f5f2ec;
+  display: flex; align-items: center; gap: 14px; padding: 16px 20px;
+  border-bottom: 1px solid var(--border-faint);
 }
-
 .avatar-wrap { flex-shrink: 0; }
-
-.avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  object-fit: cover;
-  display: block;
-}
-
+.avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; display: block; }
 .avatar-empty {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: #e8e0d0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: 700;
-  color: #8b6914;
+  width: 42px; height: 42px; border-radius: 50%; background: var(--bg-surface);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: var(--accent);
 }
 
-.card-title {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
+.card-title { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.user-name { font-size: 14px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.me-badge { flex-shrink: 0; font-size: 10px; font-weight: 700; color: var(--accent); background: var(--accent-bg); padding: 2px 8px; border-radius: 10px; }
+.role-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-.user-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: #2c2315;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.me-badge {
-  flex-shrink: 0;
-  font-size: 10px;
-  font-weight: 700;
-  color: #8b6914;
-  background: #fdf3dc;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.role-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-/* 全フィールドグリッド */
-.fields-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-}
-
+.fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
 .field-row {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 20px;
-  border-bottom: 1px solid #f5f2ec;
-  border-right: 1px solid #f5f2ec;
+  display: flex; flex-direction: column; gap: 2px; padding: 10px 20px;
+  border-bottom: 1px solid var(--border-faint); border-right: 1px solid var(--border-faint);
 }
+.field-row:nth-child(even) { border-right: none; }
+.field-row.extra { background: var(--accent-bg-dim); }
 
-.field-row:nth-child(even) {
-  border-right: none;
-}
+.field-key { font-size: 10px; color: var(--text-placeholder); letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600; }
+.field-val { font-size: 12px; color: var(--text); word-break: break-all; line-height: 1.5; }
+.field-val.monospace { font-family: 'SF Mono', 'Menlo', monospace; font-size: 11px; color: var(--text-sub); }
+.url-val { font-size: 10px; color: var(--blue); word-break: break-all; }
 
-.field-row.extra {
-  background: #fdf8f0;
-}
-
-.field-key {
-  font-size: 10px;
-  color: #c0b8a8;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-.field-val {
-  font-size: 12px;
-  color: #2c2315;
-  word-break: break-all;
-  line-height: 1.5;
-}
-
-.field-val.monospace {
-  font-family: 'SF Mono', 'Menlo', monospace;
-  font-size: 11px;
-  color: #6b5a3a;
-}
-
-.url-val {
-  font-size: 10px;
-  color: #4a6da8;
-  word-break: break-all;
-}
-
-/* 権限チップ */
-.role-chip {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-  white-space: nowrap;
-}
-.role-user   { background: #f0ece4; color: #a09070; }
-.role-viewer { background: #e8f0fe; color: #4a6da8; }
-.role-editor { background: #e8f5e9; color: #3a7a3a; }
-.role-admin  { background: #fce8e6; color: #c0392b; }
+.role-chip { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+.role-user   { background: var(--bg-surface); color: var(--text-muted); }
+.role-viewer { background: var(--digital-bg); color: var(--blue); }
+.role-editor { background: var(--success-bg); color: var(--success); }
+.role-admin  { background: var(--danger-bg); color: var(--danger); }
 
 .role-select {
-  height: 30px;
-  padding: 0 8px;
-  border: 1.5px solid #e0dbd0;
-  border-radius: 6px;
-  font-size: 12px;
-  font-family: inherit;
-  color: #2c2315;
-  background: #faf8f4;
-  cursor: pointer;
-  outline: none;
+  height: 30px; padding: 0 8px; border: 1.5px solid var(--border); border-radius: 6px;
+  font-size: 12px; font-family: inherit; color: var(--text); background: var(--bg-input);
+  cursor: pointer; outline: none;
 }
 .role-select:disabled { opacity: 0.4; cursor: default; }
 
-/* レスポンシブ */
 @media (max-width: 600px) {
   .users-view { padding: 16px 14px 64px; }
   .fields-grid { grid-template-columns: 1fr; }

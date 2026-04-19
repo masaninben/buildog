@@ -154,10 +154,9 @@ void userProfileStore
 <style scoped>
 .shelf-view {
   min-height: 100vh;
-  background: #faf8f4;
+  background: var(--bg);
 }
 
-/* ツールバー */
 .toolbar {
   position: sticky;
   top: 54px;
@@ -168,10 +167,10 @@ void userProfileStore
   gap: 12px;
   padding: 0 20px;
   height: 48px;
-  background: rgba(250, 248, 244, 0.95);
+  background: var(--toolbar-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border-bottom: 1px solid #f0ece4;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .filter-pills {
@@ -193,19 +192,19 @@ void userProfileStore
   gap: 4px;
   height: 28px;
   padding: 0 12px;
-  border: 1.5px solid #e0dbd0;
+  border: 1.5px solid var(--border);
   border-radius: 20px;
   font-size: 11px;
   font-weight: 600;
   font-family: inherit;
-  color: #a09070;
-  background: #fff;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
   cursor: pointer;
   white-space: nowrap;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.pill:hover { border-color: #8b6914; color: #8b6914; }
-.pill.active { background: #8b6914; border-color: #8b6914; color: #fff; }
+.pill:hover { border-color: var(--accent); color: var(--accent); }
+.pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .pill-count { font-size: 10px; opacity: 0.75; }
 
 .toolbar-right {
@@ -218,12 +217,12 @@ void userProfileStore
 .sort-select {
   height: 28px;
   padding: 0 8px;
-  border: 1.5px solid #e0dbd0;
+  border: 1.5px solid var(--border);
   border-radius: 6px;
   font-size: 11px;
   font-family: inherit;
-  color: #6b5a3a;
-  background: #fff;
+  color: var(--text-sub);
+  background: var(--bg-card);
   outline: none;
   cursor: pointer;
 }
@@ -231,7 +230,7 @@ void userProfileStore
 .size-btns {
   display: flex;
   gap: 2px;
-  background: #f0ece4;
+  background: var(--bg-surface);
   border-radius: 6px;
   padding: 2px;
 }
@@ -243,15 +242,14 @@ void userProfileStore
   border-radius: 4px;
   font-size: 9px;
   font-family: monospace;
-  color: #a09070;
+  color: var(--text-muted);
   background: transparent;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
   letter-spacing: -1px;
 }
-.size-btn.active { background: #fff; color: #8b6914; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.size-btn.active { background: var(--bg-card); color: var(--accent); box-shadow: var(--shadow-sm); }
 
-/* メインコンテンツ */
 .shelf-main {
   padding: 16px 16px 80px;
 }
@@ -260,7 +258,7 @@ void userProfileStore
   text-align: center;
   padding: 64px 0;
   font-size: 13px;
-  color: #b0a090;
+  color: var(--text-faint);
 }
 
 .state-empty {
@@ -272,12 +270,12 @@ void userProfileStore
 }
 
 .empty-icon { font-size: 40px; line-height: 1; opacity: 0.4; }
-.empty-text { font-size: 14px; color: #b0a090; }
+.empty-text { font-size: 14px; color: var(--text-faint); }
 
 .empty-add-btn {
   margin-top: 8px;
   padding: 9px 20px;
-  background: #8b6914;
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 7px;
@@ -287,14 +285,13 @@ void userProfileStore
   font-family: inherit;
   transition: background 0.15s;
 }
-.empty-add-btn:hover { background: #70530f; }
+.empty-add-btn:hover { background: var(--accent-hover); }
 
 .shelf-grid {
   display: grid;
   gap: 10px;
 }
 
-/* レスポンシブ */
 @media (max-width: 430px) {
   .toolbar { padding: 0 12px; gap: 8px; }
   .shelf-main { padding: 12px 12px 80px; }

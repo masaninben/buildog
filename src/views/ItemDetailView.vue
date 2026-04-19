@@ -227,30 +227,23 @@ async function doDelete() {
 <style scoped>
 .detail-view {
   min-height: 100vh;
-  background: #faf8f4;
+  background: var(--bg);
 }
+.detail-view.archived { filter: grayscale(40%); }
 
-.detail-view.archived {
-  filter: grayscale(50%);
-}
-
-/* ページ内ヘッダー（戻るボタン） */
-.page-header {
-  padding: 8px 16px 0;
-}
+.page-header { padding: 8px 16px 0; }
 
 .back-btn {
   background: none;
   border: none;
   font-size: 22px;
-  color: #8b6914;
+  color: var(--accent);
   cursor: pointer;
   padding: 4px 8px 4px 0;
   font-family: inherit;
   line-height: 1;
 }
 
-/* メイン */
 .detail-main {
   max-width: 520px;
   margin: 0 auto;
@@ -260,19 +253,19 @@ async function doDelete() {
   gap: 12px;
 }
 
-/* 表紙カード */
 .cover-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 10px;
   padding: 16px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-faint);
 }
 
 .cover-wrap {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  background: #f5f2ec;
+  background: var(--bg-surface);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -282,16 +275,11 @@ async function doDelete() {
 }
 .cover-wrap:hover .cover-camera-hint { opacity: 1; }
 
-.cover-img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  display: block;
-}
+.cover-img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
 
 .cover-fallback {
   font-size: 14px;
-  color: #8b6914;
+  color: var(--accent);
   font-weight: 500;
   text-align: center;
   padding: 16px;
@@ -302,7 +290,7 @@ async function doDelete() {
   position: absolute;
   bottom: 10px;
   right: 10px;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.55);
   color: #fff;
   font-size: 18px;
   width: 36px;
@@ -318,7 +306,7 @@ async function doDelete() {
 
 .photo-panel {
   margin-top: 14px;
-  border-top: 1px solid #f0ece4;
+  border-top: 1px solid var(--border-subtle);
   padding-top: 14px;
 }
 
@@ -332,7 +320,7 @@ async function doDelete() {
 .photo-panel-title {
   font-size: 12px;
   font-weight: 600;
-  color: #8b6914;
+  color: var(--accent);
   letter-spacing: 0.04em;
 }
 
@@ -340,57 +328,57 @@ async function doDelete() {
   background: none;
   border: none;
   font-size: 16px;
-  color: #b0a090;
+  color: var(--text-faint);
   cursor: pointer;
   padding: 2px 4px;
   line-height: 1;
 }
 
-/* 情報カード */
 .info-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 10px;
   padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-faint);
 }
 
 .title {
   font-size: 18px;
   font-weight: 700;
-  color: #2c2315;
+  color: var(--text);
   line-height: 1.4;
   margin-bottom: 4px;
 }
 
 .creator {
   font-size: 13px;
-  color: #a09070;
+  color: var(--text-muted);
   margin-bottom: 16px;
 }
 
-.meta { border-top: 1px solid #f0ece4; }
+.meta { border-top: 1px solid var(--border-subtle); }
 
 .meta-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 10px 0;
-  border-bottom: 1px solid #f0ece4;
+  border-bottom: 1px solid var(--border-faint);
   font-size: 13px;
 }
 
-.meta-label { color: #b0a090; }
-.meta-value { color: #2c2315; font-weight: 500; }
-.status-owned { color: #8b6914; }
-.status-archived { color: #999; }
+.meta-label { color: var(--text-faint); }
+.meta-value { color: var(--text); font-weight: 500; }
+.status-owned { color: var(--accent); }
+.status-archived { color: var(--text-muted); }
 
-/* 手放しアシスト */
 .assist-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 10px;
   padding: 18px 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
-  border-left: 3px solid #c8a830;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-faint);
+  border-left: 3px solid var(--warning);
 }
 
 .assist-header {
@@ -405,15 +393,15 @@ async function doDelete() {
 .assist-title {
   font-size: 14px;
   font-weight: 700;
-  color: #2c2315;
+  color: var(--text);
   flex: 1;
 }
 
 .assist-badge {
   font-size: 10px;
   font-weight: 700;
-  color: #c8a830;
-  background: #fdf6dc;
+  color: var(--warning);
+  background: var(--warning-bg);
   padding: 2px 8px;
   border-radius: 10px;
   letter-spacing: 0.04em;
@@ -421,38 +409,34 @@ async function doDelete() {
 
 .assist-desc {
   font-size: 12px;
-  color: #8a7860;
+  color: var(--text-muted);
   line-height: 1.7;
   margin-bottom: 12px;
 }
 
-.assist-chips {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
+.assist-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 
 .assist-chip {
   font-size: 11px;
-  color: #8b6914;
-  background: #fdf3dc;
+  color: var(--accent);
+  background: var(--accent-bg);
   padding: 4px 10px;
   border-radius: 20px;
   font-weight: 500;
 }
 
-/* アクション */
 .action-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 10px;
   padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-faint);
 }
 
 .release-btn {
   width: 100%;
   padding: 14px;
-  background: #8b6914;
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -463,13 +447,13 @@ async function doDelete() {
   letter-spacing: 0.04em;
   transition: background 0.15s;
 }
-.release-btn:hover { background: #70530f; }
+.release-btn:hover { background: var(--accent-hover); }
 
 .method-picker { margin-top: 16px; }
 
 .method-label {
   font-size: 11px;
-  color: #b0a090;
+  color: var(--text-faint);
   letter-spacing: 0.05em;
   margin-bottom: 10px;
   text-transform: uppercase;
@@ -483,24 +467,24 @@ async function doDelete() {
 
 .method-btn {
   padding: 11px;
-  border: 1.5px solid #e0dbd0;
+  border: 1.5px solid var(--border);
   border-radius: 7px;
-  background: #fff;
+  background: var(--bg-subtle);
   font-size: 13px;
   font-weight: 500;
-  color: #5a4f40;
+  color: var(--text-sub);
   cursor: pointer;
   font-family: inherit;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.method-btn:hover { border-color: #8b6914; color: #8b6914; background: #fdf8ee; }
+.method-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 
 .unarchive-btn {
   width: 100%;
   padding: 12px;
   background: transparent;
-  border: 1.5px solid #c0b8a8;
-  color: #8a8070;
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
@@ -508,19 +492,19 @@ async function doDelete() {
   font-family: inherit;
   transition: background 0.15s, color 0.15s;
 }
-.unarchive-btn:hover { background: #f0ece4; color: #5a4f40; }
+.unarchive-btn:hover { background: var(--bg-surface); color: var(--text-sub); }
 
-/* メモ */
 .memo-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 10px;
   padding: 16px 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-faint);
 }
 
 .section-label {
   font-size: 11px;
-  color: #b0a090;
+  color: var(--text-faint);
   letter-spacing: 0.06em;
   margin-bottom: 8px;
   text-transform: uppercase;
@@ -533,14 +517,13 @@ async function doDelete() {
   outline: none;
   resize: none;
   font-size: 14px;
-  color: #2c2315;
+  color: var(--text);
   font-family: inherit;
   line-height: 1.6;
   background: transparent;
 }
-.memo-input::placeholder { color: #c8bfb0; }
+.memo-input::placeholder { color: var(--text-placeholder); }
 
-/* 削除ゾーン */
 .danger-zone {
   display: flex;
   justify-content: center;
@@ -551,21 +534,21 @@ async function doDelete() {
   background: none;
   border: none;
   font-size: 12px;
-  color: #c0a8a0;
+  color: var(--text-faint);
   cursor: pointer;
   font-family: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
   padding: 4px 8px;
+  transition: color 0.15s;
 }
-.delete-btn:hover { color: #c0786a; }
+.delete-btn:hover { color: var(--danger); }
 
-/* 削除確認ダイアログ */
 .confirm-overlay {
   position: fixed;
   inset: 0;
   z-index: 300;
-  background: rgba(30, 20, 10, 0.5);
+  background: var(--overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -573,12 +556,13 @@ async function doDelete() {
 }
 
 .confirm-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 14px;
   padding: 28px 24px;
   width: 100%;
   max-width: 320px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -587,13 +571,13 @@ async function doDelete() {
 .confirm-title {
   font-size: 16px;
   font-weight: 700;
-  color: #2c2315;
+  color: var(--text);
   text-align: center;
 }
 
 .confirm-desc {
   font-size: 13px;
-  color: #b0a090;
+  color: var(--text-muted);
   text-align: center;
 }
 
@@ -616,27 +600,26 @@ async function doDelete() {
 }
 
 .confirm-cancel {
-  background: #f0ece4;
-  border: none;
-  color: #5a4f40;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-sub);
 }
-.confirm-cancel:hover { background: #e8e0d4; }
+.confirm-cancel:hover { background: var(--bg-hover); }
 
 .confirm-delete {
-  background: #c0786a;
+  background: var(--danger);
   border: none;
   color: #fff;
 }
-.confirm-delete:hover { background: #a86050; }
+.confirm-delete:hover { opacity: 0.85; }
 
 .not-found {
   padding: 40px;
   text-align: center;
-  color: #b0a090;
+  color: var(--text-faint);
   font-size: 14px;
 }
 
-/* レスポンシブ */
 @media (max-width: 430px) {
   .detail-main { padding: 8px 12px 80px; }
   .info-card, .action-card, .memo-card, .assist-card { padding: 16px; }

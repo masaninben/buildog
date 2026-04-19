@@ -180,15 +180,9 @@ function reset() {
   gap: 12px;
 }
 
-.hidden-input {
-  display: none;
-}
+.hidden-input { display: none; }
 
-/* 撮影ボタン群 */
-.select-wrap {
-  display: flex;
-  gap: 8px;
-}
+.select-wrap { display: flex; gap: 8px; }
 
 .camera-btn,
 .gallery-btn {
@@ -206,38 +200,33 @@ function reset() {
 }
 
 .camera-btn {
-  background: #8b6914;
+  background: var(--accent);
   color: #fff;
   border: none;
 }
-.camera-btn:hover { background: #70530f; }
+.camera-btn:hover { background: var(--accent-hover); }
 
 .gallery-btn {
-  background: #fff;
-  color: #8b6914;
-  border: 1.5px solid #8b6914;
+  background: var(--bg-subtle);
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
 }
-.gallery-btn:hover { background: #fdf8f0; }
+.gallery-btn:hover { background: var(--accent-bg); }
 
-/* プレビュー */
-.preview-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.preview-wrap { display: flex; flex-direction: column; gap: 12px; }
 
 .preview-img-wrap {
   width: 100%;
   aspect-ratio: 1 / 1;
   border-radius: 8px;
   overflow: hidden;
-  background: #f0ece4;
+  background: var(--bg-surface);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .preview-img-wrap.transparent {
-  background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 0 0 / 16px 16px;
+  background: repeating-conic-gradient(rgba(255,255,255,0.15) 0% 25%, rgba(255,255,255,0.05) 0% 50%) 0 0 / 16px 16px;
 }
 
 .preview-img {
@@ -247,62 +236,53 @@ function reset() {
   display: block;
 }
 
-/* プログレスバー */
-.progress-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+.progress-wrap { display: flex; flex-direction: column; gap: 6px; }
 
 .progress-bar {
   height: 4px;
-  background: #e0dbd0;
+  background: var(--border);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: #8b6914;
+  background: var(--accent);
   border-radius: 2px;
   transition: width 0.3s ease;
 }
 
 .progress-label {
   font-size: 11px;
-  color: #b0a090;
+  color: var(--text-faint);
   text-align: center;
 }
 
-/* プレビューアクション */
-.preview-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.preview-actions { display: flex; flex-direction: column; gap: 8px; }
 
 .bg-remove-btn {
   height: 40px;
-  border: 1.5px solid #4f65d2;
+  border: 1.5px solid var(--digital);
   border-radius: 8px;
-  background: #fff;
-  color: #4f65d2;
+  background: var(--digital-bg);
+  color: var(--digital);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: background 0.15s;
 }
-.bg-remove-btn:hover { background: #eef1fb; }
+.bg-remove-btn:hover { opacity: 0.85; }
 .bg-remove-btn.secondary {
-  border-color: #b0a090;
-  color: #8a8070;
+  border-color: var(--border);
+  color: var(--text-muted);
+  background: var(--bg-subtle);
 }
-.bg-remove-btn.secondary:hover { background: #f5f2ec; }
+.bg-remove-btn.secondary:hover { background: var(--bg-surface); }
 
 .use-btn {
   height: 44px;
-  background: #8b6914;
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -312,14 +292,14 @@ function reset() {
   font-family: inherit;
   transition: background 0.15s;
 }
-.use-btn:hover:not(:disabled) { background: #70530f; }
+.use-btn:hover:not(:disabled) { background: var(--accent-hover); }
 .use-btn:disabled { opacity: 0.5; cursor: default; }
 
 .retake-btn {
   height: 36px;
   background: none;
   border: none;
-  color: #b0a090;
+  color: var(--text-faint);
   font-size: 12px;
   cursor: pointer;
   font-family: inherit;

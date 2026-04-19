@@ -57,34 +57,31 @@ function onImgLoad(e: Event) {
 
 <style scoped>
 .shelf-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 6px;
   padding: 8px;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-faint);
 }
-
 .shelf-card:hover {
   transform: scale(1.03);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--shadow-md);
 }
-
 .shelf-card.archived {
   filter: grayscale(100%);
   opacity: 0.45;
 }
-
 .shelf-card.digital {
-  background: #eef1fb;
-  box-shadow: 0 1px 4px rgba(79, 101, 210, 0.12);
+  background: var(--digital-bg);
 }
 
 .digital-badge {
   position: absolute;
   top: 4px;
   right: 4px;
-  background: rgba(79, 101, 210, 0.85);
+  background: rgba(107, 132, 232, 0.85);
   color: #fff;
   font-size: 8px;
   font-weight: 700;
@@ -99,7 +96,7 @@ function onImgLoad(e: Event) {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  background: #fff;
+  background: var(--bg-surface);
   border-radius: 3px;
   overflow: hidden;
   display: flex;
@@ -118,7 +115,7 @@ function onImgLoad(e: Event) {
   padding: 8px;
   font-size: 10px;
   line-height: 1.5;
-  color: #8b6914;
+  color: var(--accent);
   text-align: center;
   word-break: break-word;
   font-weight: 500;

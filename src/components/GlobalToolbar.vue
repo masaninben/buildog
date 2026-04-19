@@ -45,6 +45,41 @@
         <span class="nav-label">管理</span>
       </button>
 
+      <!-- About -->
+      <button
+        class="nav-btn"
+        :class="{ active: route.name === 'about' }"
+        @click="router.push({ name: 'about' })"
+      >
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="8.5" stroke-width="2.5"/>
+          <line x1="12" y1="12" x2="12" y2="16"/>
+        </svg>
+        <span class="nav-label">About</span>
+      </button>
+
+      <!-- テーマ切替 -->
+      <button class="nav-btn nav-btn--theme" @click="toggleTheme" :title="isDark ? 'ライトモードへ' : 'ダークモードへ'">
+        <!-- Sun icon (light mode indicator) -->
+        <svg v-if="isDark" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (dark mode indicator) -->
+        <svg v-else class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <span class="nav-label">{{ isDark ? 'ライト' : 'ダーク' }}</span>
+      </button>
+
       <!-- マイページ -->
       <button
         class="nav-btn nav-btn--mypage"
@@ -67,6 +102,7 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { userProfileStore } from '../store/userProfile'
+import { useTheme } from '../composables/useTheme'
 
 defineEmits<{ openAccount: [] }>()
 
@@ -74,6 +110,13 @@ const router = useRouter()
 const route = useRoute()
 const profile = computed(() => userProfileStore.profile)
 const isInAdmin = computed(() => String(route.name ?? '').startsWith('admin'))
+
+const { theme, toggle } = useTheme()
+const isDark = computed(() => theme.value === 'dark')
+
+function toggleTheme() {
+  toggle()
+}
 </script>
 
 <style scoped>
@@ -88,10 +131,10 @@ const isInAdmin = computed(() => String(route.name ?? '').startsWith('admin'))
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  background: rgba(250, 248, 244, 0.95);
+  background: var(--toolbar-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(139, 105, 20, 0.12);
+  border-bottom: 1px solid var(--toolbar-border);
 }
 
 .logo-btn {
@@ -100,7 +143,7 @@ const isInAdmin = computed(() => String(route.name ?? '').startsWith('admin'))
   font-size: 17px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: #8b6914;
+  color: var(--accent);
   cursor: pointer;
   font-family: inherit;
   padding: 0;
@@ -108,7 +151,6 @@ const isInAdmin = computed(() => String(route.name ?? '').startsWith('admin'))
   flex-shrink: 0;
 }
 
-/* ナビゲーション */
 .toolbar-nav {
   display: flex;
   align-items: center;
@@ -121,19 +163,19 @@ const isInAdmin = computed(() => String(route.name ?? '').startsWith('admin'))
   align-items: center;
   justify-content: center;
   gap: 2px;
-  min-width: 52px;
+  min-width: 48px;
   height: 44px;
-  padding: 0 8px;
+  padding: 0 6px;
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: #b0a090;
+  color: var(--text-muted);
   cursor: pointer;
   font-family: inherit;
   transition: background 0.15s, color 0.15s;
 }
-.nav-btn:hover { background: rgba(139, 105, 20, 0.07); color: #8b6914; }
-.nav-btn.active { color: #8b6914; background: rgba(139, 105, 20, 0.1); }
+.nav-btn:hover { background: var(--accent-bg); color: var(--accent); }
+.nav-btn.active { color: var(--accent); background: var(--accent-bg); }
 
 .nav-icon { width: 20px; height: 20px; flex-shrink: 0; }
 
@@ -144,12 +186,13 @@ const isInAdmin = computed(() => String(route.name ?? '').startsWith('admin'))
   white-space: nowrap;
 }
 
-/* 追加ボタン：アクセント色 */
-.nav-btn--add { color: #8b6914; }
-.nav-btn--add:hover { background: rgba(139, 105, 20, 0.12); }
-.nav-btn--add.active { background: rgba(139, 105, 20, 0.15); }
+.nav-btn--add { color: var(--accent); }
+.nav-btn--add:hover { background: var(--accent-bg); }
+.nav-btn--add.active { background: var(--accent-bg); }
 
-/* マイページ */
+.nav-btn--theme { color: var(--text-faint); }
+.nav-btn--theme:hover { color: var(--accent); background: var(--accent-bg); }
+
 .mypage-icon-wrap {
   width: 22px;
   height: 22px;
@@ -168,10 +211,9 @@ const isInAdmin = computed(() => String(route.name ?? '').startsWith('admin'))
   border-radius: 50%;
 }
 
-/* モバイル: ラベル非表示 */
 @media (max-width: 480px) {
-  .global-toolbar { padding: 0 12px; }
+  .global-toolbar { padding: 0 10px; }
   .nav-label { display: none; }
-  .nav-btn { min-width: 40px; padding: 0 6px; }
+  .nav-btn { min-width: 36px; padding: 0 4px; }
 }
 </style>

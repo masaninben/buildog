@@ -267,37 +267,30 @@ const PREFECTURES = [
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(30, 20, 10, 0.45);
+  background: var(--overlay);
   display: flex;
   align-items: flex-end;
   justify-content: center;
   padding: 0;
 }
-
-@media (min-width: 480px) {
-  .modal-overlay { align-items: center; padding: 20px; }
-}
+@media (min-width: 480px) { .modal-overlay { align-items: center; padding: 20px; } }
 
 .modal-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 18px 18px 0 0;
   width: 100%;
   max-width: 480px;
   padding: 24px 24px 40px;
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 16px;
   max-height: 92vh;
   overflow-y: auto;
 }
-
 @media (min-width: 480px) {
-  .modal-card {
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  }
+  .modal-card { border-radius: 16px; padding: 24px; }
 }
 
 .modal-header {
@@ -309,20 +302,19 @@ const PREFECTURES = [
 .modal-title {
   font-size: 16px;
   font-weight: 700;
-  color: #2c2315;
+  color: var(--text);
 }
 
 .close-btn {
   background: none;
   border: none;
   font-size: 16px;
-  color: #b0a090;
+  color: var(--text-faint);
   cursor: pointer;
   padding: 4px;
   line-height: 1;
 }
 
-/* プロフィール */
 .profile-row {
   display: flex;
   align-items: center;
@@ -333,13 +325,13 @@ const PREFECTURES = [
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #e8e0d0;
+  background: var(--bg-surface);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .avatar-img { width: 100%; height: 100%; object-fit: cover; }
@@ -347,31 +339,30 @@ const PREFECTURES = [
 .avatar-placeholder {
   font-size: 22px;
   font-weight: 700;
-  color: #8b6914;
+  color: var(--accent);
 }
 
 .profile-name {
   font-size: 16px;
   font-weight: 700;
-  color: #2c2315;
+  color: var(--text);
 }
 
 .profile-email {
   font-size: 12px;
-  color: #b0a090;
+  color: var(--text-faint);
   margin-top: 2px;
 }
 
 .profile-location {
   font-size: 12px;
-  color: #8b6914;
+  color: var(--accent);
   margin-top: 3px;
 }
 
-/* Penstok スコア */
 .score-card {
-  background: linear-gradient(135deg, #fdf3dc, #fff8ee);
-  border: 1px solid rgba(139, 105, 20, 0.2);
+  background: var(--score-bg);
+  border: 1px solid var(--score-border);
   border-radius: 12px;
   padding: 16px 20px;
   display: flex;
@@ -382,7 +373,7 @@ const PREFECTURES = [
 .score-label {
   font-size: 11px;
   font-weight: 700;
-  color: #8b6914;
+  color: var(--accent);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-bottom: 4px;
@@ -391,23 +382,19 @@ const PREFECTURES = [
 .score-value {
   font-size: 32px;
   font-weight: 800;
-  color: #2c2315;
+  color: var(--text);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .score-hint {
   font-size: 10px;
-  color: #c8a830;
+  color: var(--warning);
   margin-top: 4px;
 }
 
-.score-rank {
-  font-size: 40px;
-  line-height: 1;
-}
+.score-rank { font-size: 40px; line-height: 1; }
 
-/* 統計 */
 .stats-section, .disposal-section {
   display: flex;
   flex-direction: column;
@@ -417,7 +404,7 @@ const PREFECTURES = [
 .stats-title {
   font-size: 11px;
   font-weight: 700;
-  color: #b0a090;
+  color: var(--text-faint);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -429,38 +416,34 @@ const PREFECTURES = [
 }
 
 .stat-item {
-  background: #faf8f4;
+  background: var(--bg-surface);
   border-radius: 10px;
   padding: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  border: 1px solid var(--border-faint);
 }
 
-.stat-item--archived { background: #f5f2ec; }
+.stat-item--archived { opacity: 0.8; }
 
 .stat-value {
   font-size: 24px;
   font-weight: 800;
-  color: #2c2315;
+  color: var(--text);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
   font-size: 10px;
-  color: #b0a090;
+  color: var(--text-faint);
   font-weight: 600;
   white-space: nowrap;
 }
 
-/* 手放し方法 */
-.disposal-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.disposal-list { display: flex; flex-direction: column; gap: 8px; }
 
 .disposal-row {
   display: grid;
@@ -473,13 +456,13 @@ const PREFECTURES = [
 
 .disposal-label {
   font-size: 12px;
-  color: #5a4f40;
+  color: var(--text-sub);
   font-weight: 500;
 }
 
 .disposal-bar-wrap {
   height: 6px;
-  background: #f0ece4;
+  background: var(--bg-surface);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -494,29 +477,27 @@ const PREFECTURES = [
 .disposal-count {
   font-size: 12px;
   font-weight: 700;
-  color: #2c2315;
+  color: var(--text);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-/* 区切り */
 .divider {
   border: none;
-  border-top: 1px solid #f0ece4;
+  border-top: 1px solid var(--border-subtle);
   margin: 0;
 }
 
-/* 居住地 */
 .section-label {
   font-size: 12px;
   font-weight: 700;
-  color: #8b6914;
+  color: var(--accent);
   letter-spacing: 0.04em;
 }
 
 .section-hint {
   font-size: 11px;
-  color: #b0a090;
+  color: var(--text-faint);
   line-height: 1.6;
   margin-top: -8px;
 }
@@ -525,7 +506,7 @@ const PREFECTURES = [
 
 .field-label {
   font-size: 11px;
-  color: #b0a090;
+  color: var(--text-faint);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   display: flex;
@@ -535,7 +516,7 @@ const PREFECTURES = [
 
 .loading-hint {
   font-size: 10px;
-  color: #c8a830;
+  color: var(--warning);
   font-weight: 600;
   text-transform: none;
   letter-spacing: 0;
@@ -547,18 +528,18 @@ const PREFECTURES = [
 .field-input {
   height: 40px;
   padding: 0 12px;
-  border: 1.5px solid #e0dbd0;
+  border: 1.5px solid var(--border);
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
-  color: #2c2315;
-  background: #faf8f4;
+  color: var(--text);
+  background: var(--bg-input);
   outline: none;
   transition: border-color 0.15s;
   width: 100%;
 }
 .field-select:focus,
-.field-input:focus { border-color: #8b6914; }
+.field-input:focus { border-color: var(--accent); }
 .field-input:disabled { opacity: 0.5; }
 
 .city-count {
@@ -567,15 +548,15 @@ const PREFECTURES = [
   top: 50%;
   transform: translateY(-50%);
   font-size: 10px;
-  color: #c0b8a8;
+  color: var(--text-placeholder);
   pointer-events: none;
 }
 
-.field-hint-error { font-size: 11px; color: #c0786a; }
+.field-hint-error { font-size: 11px; color: var(--danger); }
 
 .save-btn {
   height: 42px;
-  background: #8b6914;
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -585,17 +566,17 @@ const PREFECTURES = [
   font-family: inherit;
   transition: background 0.15s;
 }
-.save-btn:hover:not(:disabled) { background: #70530f; }
+.save-btn:hover:not(:disabled) { background: var(--accent-hover); }
 .save-btn:disabled { opacity: 0.4; cursor: default; }
 
-.saved-msg { font-size: 12px; color: #5a9a6a; text-align: center; margin-top: -8px; }
-.error-msg { font-size: 12px; color: #c0786a; text-align: center; margin-top: -8px; }
+.saved-msg { font-size: 12px; color: var(--success); text-align: center; margin-top: -8px; }
+.error-msg { font-size: 12px; color: var(--danger); text-align: center; margin-top: -8px; }
 
 .signout-btn {
   height: 42px;
   background: transparent;
-  color: #c0786a;
-  border: 1.5px solid #e8d0cc;
+  color: var(--danger);
+  border: 1.5px solid var(--danger-bg);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
@@ -603,5 +584,5 @@ const PREFECTURES = [
   font-family: inherit;
   transition: background 0.15s;
 }
-.signout-btn:hover { background: #fdf0ee; }
+.signout-btn:hover { background: var(--danger-bg); }
 </style>

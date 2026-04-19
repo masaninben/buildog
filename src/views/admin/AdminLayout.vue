@@ -20,7 +20,7 @@ import { userProfileStore } from '../../store/userProfile'
 <style scoped>
 .admin-view {
   min-height: 100vh;
-  background: #faf8f4;
+  background: var(--bg);
 }
 
 .admin-subnav {
@@ -32,10 +32,10 @@ import { userProfileStore } from '../../store/userProfile'
   gap: 4px;
   padding: 0 24px;
   height: 44px;
-  background: rgba(250, 248, 244, 0.95);
+  background: var(--toolbar-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(139, 105, 20, 0.1);
+  border-bottom: 1px solid var(--toolbar-border);
 }
 
 .nav-link {
@@ -43,14 +43,14 @@ import { userProfileStore } from '../../store/userProfile'
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #b0a090;
+  color: var(--text-muted);
   text-decoration: none;
   transition: background 0.15s, color 0.15s;
 }
-.nav-link:hover { color: #8b6914; background: rgba(139, 105, 20, 0.06); }
+.nav-link:hover { color: var(--accent); background: var(--accent-bg-dim); }
 .nav-link.router-link-active {
-  color: #8b6914;
-  background: rgba(139, 105, 20, 0.1);
+  color: var(--accent);
+  background: var(--accent-bg);
   font-weight: 600;
 }
 
