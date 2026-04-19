@@ -2,22 +2,21 @@
   <div class="omap-wrap">
     <div v-if="loading" class="omap-state">読み込み中…</div>
     <div v-else-if="totalOwners === 0" class="omap-state">まだ所有者データがありません</div>
-    <div v-show="!loading && totalOwners > 0" ref="mapEl" class="omap-el" />
-    <div v-if="!loading && totalOwners > 0" class="omap-footer">
-      {{ totalOwners }}人が所有 · {{ locationCount }}地域
-    </div>
+    <template v-else>
+      <div ref="mapEl" class="omap-el" />
+      <div class="omap-footer">{{ totalOwners }}人が所有 · {{ locationCount }}地域</div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { userProfileStore } from '../store/userProfile'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 
-// Leaflet デフォルトアイコンの壊れた参照を修正
 delete (L.Icon.Default.prototype as any)._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -33,19 +32,17 @@ const totalOwners = ref(0)
 const locationCount = ref(0)
 let mapInstance: L.Map | null = null
 
-// Nominatim ジオコーディング（localStorage キャッシュ付き）
 async function geocode(prefecture: string, city: string): Promise<[number, number] | null> {
   const key = `penstok_geo_${prefecture}__${city}`
   const cached = localStorage.getItem(key)
   if (cached) return JSON.parse(cached)
 
-  // Nominatim のレートリミット対策（1req/sec）
   await new Promise(r => setTimeout(r, 250))
   const q = `${city} ${prefecture} Japan`
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=jp&accept-language=ja`,
-      { headers: { 'User-Agent': 'Penstok/1.0 (contact@penstok.app)' } }
+      { headers: { 'User-Agent': 'Penstok/1.0' } }
     )
     const data = await res.json()
     if (data.length > 0) {
@@ -60,9 +57,9 @@ async function geocode(prefecture: string, city: string): Promise<[number, numbe
 }
 
 async function initMap() {
-  if (!props.productId || !mapEl.value) { loading.value = false; return }
+  if (!props.productId) { loading.value = false; return }
 
-  // 商品の locationCounts を取得
+  // 1. データ取得
   const snap = await getDoc(doc(db, 'products', props.productId))
   const locationCounts: Record<string, number> = snap.data()?.locationCounts ?? {}
   const entries = Object.entries(locationCounts).filter(([, v]) => v > 0)
@@ -70,17 +67,21 @@ async function initMap() {
   totalOwners.value = entries.reduce((s, [, v]) => s + v, 0)
   locationCount.value = entries.length
 
-  if (entries.length === 0) { loading.value = false; return }
+  // 2. loading を false にして mapEl を DOM に出す
+  loading.value = false
+  if (entries.length === 0) return
 
-  // ユーザー居住地を取得（マップ中心）
+  // 3. DOM 更新を待ってから Leaflet 初期化（v-else による条件レンダリング対応）
+  await nextTick()
+  if (!mapEl.value) return
+
   const profile = userProfileStore.profile
-  let center: [number, number] = [36.2048, 138.2529] // 日本中心
+  let center: [number, number] = [36.2048, 138.2529]
   if (profile?.prefecture && profile?.city) {
     const coords = await geocode(profile.prefecture, profile.city)
     if (coords) center = coords
   }
 
-  // マップ初期化
   if (mapInstance) { mapInstance.remove(); mapInstance = null }
   mapInstance = L.map(mapEl.value, {
     center,
@@ -92,27 +93,22 @@ async function initMap() {
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     maxZoom: 19,
-    attribution: '© OpenStreetMap contributors © CARTO',
+    attribution: '© OpenStreetMap © CARTO',
   }).addTo(mapInstance)
 
-  // 帰属表示（小さく右下）
   L.control.attribution({ position: 'bottomright', prefix: false }).addTo(mapInstance)
 
-  // ユーザー自身の位置マーカー
+  // ユーザー自身の位置
   if (profile?.prefecture && profile?.city) {
     const coords = await geocode(profile.prefecture, profile.city)
     if (coords) {
       L.circleMarker(coords, {
-        radius: 5,
-        fillColor: '#c9942a',
-        color: '#fff',
-        weight: 1.5,
-        fillOpacity: 1,
+        radius: 5, fillColor: '#c9942a', color: '#fff', weight: 1.5, fillOpacity: 1,
       }).bindTooltip('あなたの位置', { direction: 'top' }).addTo(mapInstance)
     }
   }
 
-  // 所有者分布サークル（逐次ジオコード）
+  // 所有者分布サークル
   const maxCount = Math.max(...entries.map(([, v]) => v))
   for (const [locKey, count] of entries) {
     const [prefecture, city] = locKey.split('__')
@@ -127,13 +123,9 @@ async function initMap() {
       color: 'rgba(201,148,42,0.5)',
       weight: 1,
       fillOpacity: 0.2,
-    }).bindTooltip(
-      `<b>${prefecture} ${city}</b><br>${count}人が所有`,
-      { direction: 'top' }
-    ).addTo(mapInstance)
+    }).bindTooltip(`<b>${prefecture} ${city}</b><br>${count}人が所有`, { direction: 'top' })
+      .addTo(mapInstance)
   }
-
-  loading.value = false
 }
 
 onMounted(initMap)
@@ -166,6 +158,5 @@ onUnmounted(() => { mapInstance?.remove(); mapInstance = null })
   font-size: 10px;
   color: var(--text-faint);
   text-align: right;
-  background: var(--bg-surface);
 }
 </style>
