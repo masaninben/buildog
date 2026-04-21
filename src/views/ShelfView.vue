@@ -22,7 +22,7 @@
 
       <div class="toolbar-right">
         <select class="sort-select" v-model="sortOrder">
-          <option value="newest">新しい順</option>
+          <option value="newest">所有→アーカイブ順</option>
           <option value="oldest">古い順</option>
           <option value="name">名前順</option>
           <option value="category">カテゴリ順</option>
@@ -131,7 +131,14 @@ const displayItems = computed(() => {
 
   return [...items].sort((a, b) => {
     switch (sortOrder.value) {
-      case 'newest':   return (b.addedAt ?? '').localeCompare(a.addedAt ?? '')
+      case 'newest': {
+        // 所有中→アーカイブ済みの順、各グループ内は更新日降順
+        const statusDiff = (a.status === 'owned' ? 0 : 1) - (b.status === 'owned' ? 0 : 1)
+        if (statusDiff !== 0) return statusDiff
+        const dateA = a.status === 'archived' ? (a.archivedAt ?? a.addedAt ?? '') : (a.addedAt ?? '')
+        const dateB = b.status === 'archived' ? (b.archivedAt ?? b.addedAt ?? '') : (b.addedAt ?? '')
+        return dateB.localeCompare(dateA)
+      }
       case 'oldest':   return (a.addedAt ?? '').localeCompare(b.addedAt ?? '')
       case 'name':     return a.name.localeCompare(b.name, 'ja')
       case 'category': {

@@ -1,11 +1,10 @@
 <template>
   <div
     class="shelf-card"
-    :class="{ archived: item.status === 'archived', digital: item.isDigital }"
+    :class="{ archived: item.status === 'archived' }"
     @click="handleClick"
   >
     <div class="cover-wrap">
-      <span v-if="item.isDigital" class="digital-badge">電子</span>
       <img
         v-if="!imgFailed && displayImageUrl"
         :src="displayImageUrl"
@@ -39,8 +38,9 @@ const displayImageUrl = computed(() =>
   ?? product.value?.imageUrl
   ?? props.item.imageUrl
 )
+// ユーザーが編集した item.name を優先。product.name は canonical として保持
 const displayName = computed(() =>
-  product.value?.name ?? props.item.name
+  props.item.name || product.value?.name || ''
 )
 
 function handleClick() {
@@ -70,21 +70,11 @@ function onImgLoad(e: Event) {
   box-shadow: var(--shadow-md);
 }
 .shelf-card.archived {
-  filter: grayscale(100%);
-  opacity: 0.45;
+  filter: grayscale(40%) saturate(0.7);
+  opacity: 0.5;
 }
-.shelf-card.digital {
-  background: var(--digital-bg);
-}
-
-.digital-badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(107, 132, 232, 0.85);
-  color: #fff;
-  font-size: 8px;
-  font-weight: 700;
+.digital-badge-removed {
+  display: none; /* 電子アイテム機能廃止 */
   padding: 2px 5px;
   border-radius: 4px;
   letter-spacing: 0.04em;
@@ -95,22 +85,20 @@ function onImgLoad(e: Event) {
 .cover-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
-  background: var(--bg-surface);
+  aspect-ratio: 3 / 4;
+  background: #ffffff;
   border-radius: 3px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3px;
+  padding: 5px;
   box-sizing: border-box;
 }
 
 .cover-img {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   display: block;
 }

@@ -21,16 +21,50 @@
         </div>
       </div>
 
-      <!-- Penstok スコア（仮） -->
+      <!-- Penstok スコア -->
       <div class="score-card">
-        <div class="score-left">
-          <p class="score-label">Penstok Score</p>
-          <p class="score-value">{{ penstokScore.toLocaleString() }}</p>
-          <p class="score-hint">仮スコア・今後実装予定</p>
+        <div class="score-top">
+          <div class="score-left">
+            <p class="score-label">Penstok Score</p>
+            <p class="score-value">{{ penstokScore.toLocaleString() }}</p>
+            <p class="score-total-hint">/ 1000</p>
+          </div>
+          <div class="score-right">
+            <p class="rank-name">{{ currentRank.name }}</p>
+            <p class="rank-sub">{{ currentRank.sub }}</p>
+          </div>
         </div>
-        <div class="score-right">
-          <span class="score-rank">{{ scoreRank }}</span>
+
+        <!-- 5軸ブレークダウン -->
+        <div class="score-axes">
+          <div class="axis-row">
+            <span class="axis-label">活動量</span>
+            <div class="axis-track"><div class="axis-bar" :style="{ width: `${(activityScore / 200) * 100}%`, background: 'var(--accent)' }" /></div>
+            <span class="axis-val">{{ activityScore }}<span class="axis-max">/200</span></span>
+          </div>
+          <div class="axis-row">
+            <span class="axis-label">継続性</span>
+            <div class="axis-track"><div class="axis-bar" :style="{ width: `${(continuityScore / 150) * 100}%`, background: 'var(--blue)' }" /></div>
+            <span class="axis-val">{{ continuityScore }}<span class="axis-max">/150</span></span>
+          </div>
+          <div class="axis-row">
+            <span class="axis-label">循環貢献</span>
+            <div class="axis-track"><div class="axis-bar" :style="{ width: `${(circulationScore / 250) * 100}%`, background: 'var(--success)' }" /></div>
+            <span class="axis-val">{{ circulationScore }}<span class="axis-max">/250</span></span>
+          </div>
+          <div class="axis-row axis-row--locked" title="編集承認システム実装後に解放">
+            <span class="axis-label">信頼性 🔒</span>
+            <div class="axis-track"><div class="axis-bar" style="width:0%" /></div>
+            <span class="axis-val axis-val--locked">—<span class="axis-max">/250</span></span>
+          </div>
+          <div class="axis-row">
+            <span class="axis-label">データ貢献</span>
+            <div class="axis-track"><div class="axis-bar" :style="{ width: `${(contributionScore / 150) * 100}%`, background: 'var(--pink)' }" /></div>
+            <span class="axis-val">{{ contributionScore }}<span class="axis-max">/150</span></span>
+          </div>
         </div>
+
+        <p class="next-action">💡 {{ nextAction }}</p>
       </div>
 
       <!-- 所有物統計 -->
@@ -146,10 +180,11 @@ const archivedCount = computed(() => shelfStore.items.filter(i => i.status === '
 const totalCount    = computed(() => shelfStore.items.length)
 
 const DISPOSAL_METHODS = [
-  { value: 'resale',   label: '再販売', icon: '💰', color: '#5a9a6a' },
-  { value: 'gift',     label: '譲渡',   icon: '🎁', color: '#6a80c8' },
-  { value: 'donation', label: '寄付',   icon: '❤️', color: '#c86a80' },
-  { value: 'disposal', label: '廃棄',   icon: '🗑',  color: '#b0a090' },
+  { value: 'resale',   label: '再販売',    icon: '💰', color: '#5a9a6a' },
+  { value: 'gift',     label: '譲渡',      icon: '🎁', color: '#6a80c8' },
+  { value: 'donation', label: '寄付',      icon: '❤️', color: '#c86a80' },
+  { value: 'recycle',  label: 'リサイクル', icon: '♻️', color: '#4ea87a' },
+  { value: 'disposal', label: '廃棄',      icon: '🗑',  color: '#b0a090' },
 ]
 
 const disposalBreakdown = computed(() =>
@@ -159,24 +194,117 @@ const disposalBreakdown = computed(() =>
   })).filter(m => m.count > 0)
 )
 
-// ---- Penstok スコア（仮） ----
-const penstokScore = computed(() => {
-  const base = totalCount.value * 10
-  const archiveBonus = archivedCount.value * 15
-  const sustainableCount = shelfStore.items.filter(
-    i => i.status === 'archived' && ['resale', 'gift', 'donation'].includes(i.disposalMethod ?? '')
-  ).length
-  const sustainableBonus = sustainableCount * 20
-  return Math.round((base + archiveBonus + sustainableBonus) / 10) * 10
+// ---- Penstok Score 5軸 ----
+
+function clamp(v: number, min: number, max: number) {
+  return Math.round(Math.max(min, Math.min(max, v)))
+}
+
+// Activity（活動量）0-200
+const activityScore = computed(() => {
+  const items = shelfStore.items
+  const withNotes        = items.filter(i => i.notes?.trim()).length
+  const withCustomImage  = items.filter(i => i.customImageUrl).length
+  let s = 0
+  s += Math.min(items.length * 3, 80)
+  s += Math.min(withNotes * 5, 50)
+  s += Math.min(withCustomImage * 6, 40)
+  s += Math.min(archivedCount.value * 5, 30)
+  return clamp(s, 0, 200)
 })
 
-const scoreRank = computed(() => {
-  const s = penstokScore.value
-  if (s >= 1000) return '🏆'
-  if (s >= 500)  return '🥇'
-  if (s >= 200)  return '🥈'
-  if (s >= 50)   return '🥉'
-  return '🌱'
+// Continuity（継続性）0-150
+const continuityScore = computed(() => {
+  const items = shelfStore.items
+  if (!items.length) return 0
+  const dates = items.map(i => i.addedAt).filter(Boolean).sort()
+  if (!dates.length) return 0
+  const daysSince = Math.floor((Date.now() - new Date(dates[0]).getTime()) / 86400000)
+  if (isNaN(daysSince)) return 0
+  const uniqueMonths = new Set(dates.map(d => d.slice(0, 7))).size
+  const archivedMonths = new Set(
+    items.filter(i => i.archivedAt).map(i => i.archivedAt!.slice(0, 7))
+  ).size
+  let s = 0
+  s += clamp(daysSince / 365 * 60, 0, 60)
+  s += clamp(uniqueMonths * 7, 0, 60)
+  s += clamp(archivedMonths * 5, 0, 30)
+  return clamp(s, 0, 150)
+})
+
+// Circulation（循環貢献）0-250
+const circulationScore = computed(() => {
+  const items    = shelfStore.items
+  const archived = items.filter(i => i.status === 'archived')
+  const total    = items.length
+  const resale   = archived.filter(i => i.disposalMethod === 'resale').length
+  const gift     = archived.filter(i => i.disposalMethod === 'gift').length
+  const donation = archived.filter(i => i.disposalMethod === 'donation').length
+  const recycle  = archived.filter(i => i.disposalMethod === 'recycle').length
+  const disposal = archived.filter(i => i.disposalMethod === 'disposal').length
+  const good     = resale + gift + donation + recycle
+  const circRate = total > 0 ? archived.length / total : 0
+  const qualRate = archived.length > 0 ? good / archived.length : 0
+  let s = 0
+  s += resale   * 8
+  s += gift     * 7
+  s += donation * 9
+  s += recycle  * 8
+  s += disposal * 4
+  s += circRate * 60
+  s += qualRate * 40
+  return clamp(s, 0, 250)
+})
+
+// Reliability（信頼性）0-250 — 編集承認システム実装後に解放
+const reliabilityScore = computed(() => 0)
+
+// Contribution（データ貢献）0-150
+const contributionScore = computed(() => {
+  const items          = shelfStore.items
+  const withTitle      = items.filter(i => i.customTitle?.trim()).length
+  const withImage      = items.filter(i => i.customImageUrl).length
+  const withPrice      = items.filter(i => i.acquirePrice || i.sellPrice).length
+  const withAcquiredAt = items.filter(i => i.acquiredAt).length
+  let s = 0
+  s += clamp(withTitle * 6, 0, 36)
+  s += clamp(withImage * 5, 0, 35)
+  s += clamp(withPrice * 4, 0, 30)
+  s += clamp(withAcquiredAt * 2, 0, 20)
+  return clamp(s, 0, 150)
+})
+
+const penstokScore = computed(() =>
+  activityScore.value + continuityScore.value +
+  circulationScore.value + reliabilityScore.value + contributionScore.value
+)
+
+const RANKS = [
+  { min: 990, name: '管理人', sub: 'Penstok編集権限候補' },
+  { min: 950, name: '案内人', sub: '他者の手放しを助ける存在' },
+  { min: 900, name: '守り手', sub: '信頼できる記録者' },
+  { min: 800, name: '編み手', sub: 'データで世界を編んでいる' },
+  { min: 650, name: '渡し手', sub: '質の高い循環を続けている' },
+  { min: 450, name: '流し手', sub: 'モノを循環させている' },
+  { min: 250, name: '整え手', sub: '情報を丁寧に整えている' },
+  { min: 100, name: '記し手', sub: '持ち物を記録している' },
+  { min: 0,   name: '訪れ手', sub: 'まだ記録を始めたばかり' },
+]
+
+const currentRank = computed(() =>
+  RANKS.find(r => penstokScore.value >= r.min) ?? RANKS[RANKS.length - 1]
+)
+
+const nextAction = computed(() => {
+  const items = shelfStore.items
+  if (!items.length) return 'アイテムを登録するとスコアが始まります'
+  if (!archivedCount.value) return '手放し記録を始めると循環スコアが上がります'
+  const archived = items.filter(i => i.status === 'archived')
+  const good = archived.filter(i => ['resale','gift','donation','recycle'].includes(i.disposalMethod ?? '')).length
+  if (archived.length > 0 && good < archived.length * 0.5) return '売る・譲る・寄付するとスコアが上がります'
+  const withPrice = items.filter(i => i.acquirePrice).length
+  if (withPrice < items.length * 0.3) return '取得金額を記録するとスコアが上がります'
+  return '継続して記録を続けるとスコアが上がります'
 })
 
 // ---- 居住地 ----
@@ -266,7 +394,7 @@ const PREFECTURES = [
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 1000;
   background: var(--overlay);
   display: flex;
   align-items: flex-end;
@@ -280,23 +408,32 @@ const PREFECTURES = [
   border-radius: 18px 18px 0 0;
   width: 100%;
   max-width: 480px;
-  padding: 24px 24px 40px;
+  padding: 0 24px calc(24px + env(safe-area-inset-bottom, 0px));
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-height: 92vh;
+  max-height: 92dvh;
   overflow-y: auto;
 }
 @media (min-width: 480px) {
-  .modal-card { border-radius: 16px; padding: 24px; }
+  .modal-card { border-radius: 16px; padding: 0 24px 24px; max-height: 90dvh; }
 }
 
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-card);
+  /* カード左右paddingを打ち消して全幅に */
+  margin: 0 -24px;
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--border-faint);
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -364,14 +501,20 @@ const PREFECTURES = [
   background: var(--score-bg);
   border: 1px solid var(--score-border);
   border-radius: 12px;
-  padding: 16px 20px;
+  padding: 16px 18px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.score-top {
+  display: flex;
+  align-items: flex-start;
   justify-content: space-between;
 }
 
 .score-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--accent);
   letter-spacing: 0.06em;
@@ -380,20 +523,80 @@ const PREFECTURES = [
 }
 
 .score-value {
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 800;
   color: var(--text);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
-.score-hint {
+.score-total-hint {
   font-size: 10px;
-  color: var(--warning);
-  margin-top: 4px;
+  color: var(--text-faint);
+  margin-top: 3px;
 }
 
-.score-rank { font-size: 40px; line-height: 1; }
+.rank-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1.2;
+  text-align: right;
+}
+
+.rank-sub {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-align: right;
+  margin-top: 3px;
+  max-width: 120px;
+  line-height: 1.4;
+}
+
+/* 5軸ブレークダウン */
+.score-axes { display: flex; flex-direction: column; gap: 7px; }
+
+.axis-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 48px;
+  align-items: center;
+  gap: 8px;
+}
+.axis-row--locked { opacity: 0.35; }
+
+.axis-label { font-size: 10px; color: var(--text-sub); font-weight: 500; }
+
+.axis-track {
+  height: 5px;
+  background: var(--bg-surface);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.axis-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+  min-width: 0;
+}
+
+.axis-val {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.axis-val--locked { color: var(--text-faint); }
+.axis-max { font-weight: 400; color: var(--text-faint); }
+
+.next-action {
+  font-size: 11px;
+  color: var(--accent);
+  line-height: 1.5;
+  padding-top: 2px;
+  border-top: 1px solid var(--border-subtle);
+}
 
 .stats-section, .disposal-section {
   display: flex;

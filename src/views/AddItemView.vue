@@ -241,6 +241,14 @@
           <button class="go-shelf-btn" @click="router.push({ name: 'shelf' })">棚を見る →</button>
         </div>
 
+        <!-- Penstok未登録ノーティス -->
+        <div
+          v-if="searched && filteredResults.length > 0 && penstokCount === 0"
+          class="penstok-notice"
+        >
+          Penstok DBに未登録の商品です。追加すると自動登録されます。
+        </div>
+
         <!-- 検索結果 -->
         <div v-if="filteredResults.length" class="results-card">
           <div
@@ -260,17 +268,9 @@
             <div class="result-info">
               <p class="result-title">{{ book.name }}</p>
               <p class="result-creator">{{ book.creator || '—' }}</p>
+              <span v-if="book.inPenstok" class="penstok-badge">Penstok DB</span>
             </div>
             <div class="result-actions">
-              <label class="digital-toggle" title="電子書籍として追加">
-                <input
-                  type="checkbox"
-                  v-model="digitalIds"
-                  :value="book.id"
-                  :disabled="addedIds.has(book.id)"
-                />
-                <span class="digital-label">電子</span>
-              </label>
               <button
                 class="result-add-btn"
                 :class="{ added: addedIds.has(book.id) }"
@@ -323,10 +323,6 @@
             <label class="field-label">画像URL</label>
             <input v-model="manual.imageUrl" type="url" class="field-input" placeholder="https://..." />
           </div>
-          <label class="digital-check-row">
-            <input type="checkbox" v-model="manual.isDigital" />
-            <span>電子書籍 / デジタルコンテンツとして登録</span>
-          </label>
           <button class="submit-btn" :disabled="!manual.name.trim() || saving" @click="addManual">
             棚に追加する
           </button>
@@ -382,9 +378,9 @@ function openScanner() {
 
 const inputEl = ref<HTMLInputElement | null>(null)
 const isbnInputEl = ref<HTMLInputElement | null>(null)
-const addedIds = reactive(new Set<string>())
-const digitalIds = reactive(new Set<string>())
-const addedCount = ref(0)
+const addedIds    = reactive(new Set<string>())
+const addedCount  = ref(0)
+const penstokCount = ref(0)   // 最後の検索でPenstok DBにヒットした件数
 
 // ---- オートコンプリート ----
 const suggestions = ref<BookResult[]>([])
@@ -415,6 +411,7 @@ interface BookResult {
   isbn?: string
   janCode?: string
   externalSource?: string
+  inPenstok?: boolean   // Penstok商品DBに登録済み
 }
 
 const results = ref<BookResult[]>([])
@@ -429,7 +426,7 @@ const filteredResults = computed(() => {
 
 const manual = reactive({
   name: '', creator: '', imageUrl: '',
-  category: 'book' as ItemCategory, isDigital: false,
+  category: 'book' as ItemCategory,
 })
 
 onMounted(() => inputEl.value?.focus())
@@ -509,6 +506,7 @@ function resetSearch() {
   currentPage.value = 1
   searchError.value = ''
   sourceApi.value = ''
+  penstokCount.value = 0
   closeSuggestions()
 }
 
@@ -633,13 +631,13 @@ async function fetchSuggestions(q: string) {
 
 function selectSuggestion(s: BookResult) {
   closeSuggestions()
-  // 検索窓は変更せず、タップした候補を直接結果として表示
-  results.value = [s]
+  results.value = [{ ...s, inPenstok: true }]
   searched.value = true
   hasMore.value = false
   filter.value = ''
   searchError.value = ''
   sourceApi.value = ''
+  penstokCount.value = 1
 }
 
 function closeSuggestions() {
@@ -687,7 +685,22 @@ async function doSearch() {
     if (isIsbn) {
       await searchByIsbn(q.replace(/[\s-]/g, ''))
     } else {
-      await fetchByCategory(q, 1, true)
+      // Penstok DB と外部API を並列実行
+      const [, penstokRes] = await Promise.allSettled([
+        fetchByCategory(q, 1, true),
+        searchProductsDB(q, searchCategory.value),
+      ])
+      const penstokKeys = new Set(
+        penstokRes.status === 'fulfilled'
+          ? penstokRes.value.map(p => p.name.slice(0, 30).toLowerCase())
+          : []
+      )
+      penstokCount.value = penstokKeys.size
+      // 外部API結果に inPenstok フラグを付与
+      results.value = results.value.map(r => ({
+        ...r,
+        inPenstok: penstokKeys.has(r.name.slice(0, 30).toLowerCase()),
+      }))
     }
   } finally {
     loading.value = false
@@ -1103,7 +1116,6 @@ async function addBook(book: BookResult) {
       creator: book.creator,
       imageUrl: book.imageUrl,
       category: book.category,
-      isDigital: digitalIds.has(book.id) || undefined,
       isbn: book.isbn,
       janCode: book.janCode,
       externalSource: book.externalSource,
@@ -1125,7 +1137,6 @@ async function addManual() {
       creator: manual.creator.trim(),
       imageUrl: manual.imageUrl.trim(),
       category: manual.category,
-      isDigital: manual.isDigital || undefined,
     })
     router.push({ name: 'shelf' })
   } finally {
@@ -1429,11 +1440,20 @@ async function addManual() {
 }
 .result-creator { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+.penstok-badge {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  background: var(--accent); color: #fff;
+  padding: 1px 6px; border-radius: 10px; margin-top: 4px; letter-spacing: 0.04em;
+}
+
+.penstok-notice {
+  font-size: 11px; color: var(--text-faint); text-align: center;
+  background: var(--bg-subtle); border: 1px dashed var(--border);
+  border-radius: 8px; padding: 8px 14px; margin: 0 0 4px;
+}
+
 .result-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
 
-.digital-toggle { display: flex; align-items: center; gap: 3px; cursor: pointer; }
-.digital-toggle input[type="checkbox"] { width: 12px; height: 12px; accent-color: var(--digital); cursor: pointer; }
-.digital-label { font-size: 10px; font-weight: 600; color: var(--digital); user-select: none; }
 
 .result-add-btn {
   flex-shrink: 0; min-width: 52px; padding: 6px 14px;
@@ -1483,11 +1503,6 @@ async function addManual() {
 .field-input::placeholder { color: var(--text-placeholder); }
 .field-select { cursor: pointer; }
 
-.digital-check-row {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; color: var(--digital); font-weight: 500; cursor: pointer; padding: 2px 0;
-}
-.digital-check-row input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--digital); cursor: pointer; }
 
 .submit-btn {
   height: 46px; background: var(--accent); color: #fff; border: none; border-radius: 8px;

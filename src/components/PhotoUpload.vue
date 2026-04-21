@@ -135,13 +135,60 @@ function resetToOriginal() {
   bgRemoved.value = false
 }
 
+// 白背景Canvasに合成してJPEG Blobを返す
+function compositeOnWhite(blob: Blob, withShadow: boolean): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(blob)
+    img.onload = () => {
+      const W = 600, H = 800  // 3:4 — カードと同比率
+      const pad = 32
+      const canvas = document.createElement('canvas')
+      canvas.width = W
+      canvas.height = H
+      const ctx = canvas.getContext('2d')!
+
+      // 白背景
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, W, H)
+
+      // フィット計算
+      const scale = Math.min((W - pad * 2) / img.width, (H - pad * 2) / img.height)
+      const w = img.width * scale
+      const h = img.height * scale
+      const x = (W - w) / 2
+      const y = (H - h) / 2
+
+      // 白地に白い被写体が溶け込まないよう薄いシャドウを付与
+      if (withShadow) {
+        ctx.shadowColor = 'rgba(0,0,0,0.13)'
+        ctx.shadowBlur = 16
+        ctx.shadowOffsetY = 3
+      } else {
+        // 背景除去なしでも四辺に薄いフレームを確保
+        ctx.shadowColor = 'rgba(0,0,0,0.06)'
+        ctx.shadowBlur = 6
+      }
+      ctx.drawImage(img, x, y, w, h)
+      ctx.shadowColor = 'transparent'
+
+      URL.revokeObjectURL(url)
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', 0.93)
+    }
+    img.onerror = () => reject(new Error('image load failed'))
+    img.src = url
+  })
+}
+
 async function confirmUpload() {
   const blob = processedBlob.value ?? originalBlob.value
   if (!blob) return
   uploading.value = true
   try {
+    const finalBlob = await compositeOnWhite(blob, bgRemoved.value)
+
     const form = new FormData()
-    form.append('file', blob)
+    form.append('file', finalBlob, 'image.jpg')
     form.append('upload_preset', UPLOAD_PRESET)
     form.append('folder', `penstok/${props.uploadPath}`)
 

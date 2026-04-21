@@ -38,11 +38,15 @@ export interface ShelfItem {
   creator: string         // 著者 / アーティスト / メーカー
   imageUrl: string        // 商品画像 URL
   category: ItemCategory  // カテゴリ
-  isDigital?: boolean     // 電子書籍など非物理アイテム
   status: 'owned' | 'archived'
   addedAt: string         // 棚に追加した日 YYYY-MM-DD
+  acquiredAt?: string     // 取得日（addedAt より遡れる）YYYY-MM-DD
   archivedAt?: string     // 手放した日 YYYY-MM-DD
-  disposalMethod?: 'resale' | 'gift' | 'donation' | 'disposal'
+  disposalMethod?: 'resale' | 'gift' | 'donation' | 'recycle' | 'disposal'
   notes?: string          // メモ
-  customImageUrl?: string  // ユーザーが撮影・アップロードした画像（優先表示）
+  customImageUrl?: string // ユーザーが撮影・アップロードした画像（優先表示）
+  customTitle?: string    // ユーザー独自タイトル（product名を上書き）
+  acquirePrice?: number   // 取得金額（円）
+  sellPrice?: number      // 売却・譲渡時の金額（円）
+  showOnMap?: boolean     // 位置情報をマップに反映するか（undefined = true）
 }

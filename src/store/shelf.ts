@@ -10,6 +10,7 @@ import {
   setDoc,
   deleteField,
   increment,
+  arrayUnion,
   serverTimestamp,
   type Unsubscribe,
 } from 'firebase/firestore'
@@ -23,7 +24,8 @@ const state = reactive({
 })
 
 let unsubscribe: Unsubscribe | null = null
-let notesTimer: ReturnType<typeof setTimeout> | null = null
+let notesTimer:  ReturnType<typeof setTimeout> | null = null
+let fieldsTimer: ReturnType<typeof setTimeout> | null = null
 
 function itemsRef(uid: string) {
   return collection(db, 'users', uid, 'items')
@@ -147,7 +149,6 @@ export interface AddItemPayload {
   creator: string
   imageUrl: string
   category: ItemCategory
-  isDigital?: boolean
   isbn?: string
   janCode?: string
   externalSource?: string
@@ -177,7 +178,6 @@ export const store = {
       creator: payload.creator,
       imageUrl: payload.imageUrl,
       category: payload.category,
-      ...(payload.isDigital ? { isDigital: true } : {}),
       status: 'owned',
       addedAt: new Date().toISOString().split('T')[0],
       ...(productId ? { productId } : {}),
@@ -187,21 +187,46 @@ export const store = {
   async archive(id: string, disposalMethod: NonNullable<ShelfItem['disposalMethod']>) {
     const uid = authState.user?.uid
     if (!uid) return
+    const item = state.items.find(i => i.id === id)
     await updateDoc(doc(db, 'users', uid, 'items', id), {
       status: 'archived',
       disposalMethod,
       archivedAt: new Date().toISOString().split('T')[0],
     })
+    if (item?.productId) {
+      const updates: Record<string, unknown> = {
+        [`disposalCounts.${disposalMethod}`]: increment(1),
+      }
+      // 所有期間を集計（取得日 or 追加日から手放し日まで）
+      const startDate = item.acquiredAt ?? item.addedAt
+      if (startDate) {
+        const days = Math.round(
+          (Date.now() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)
+        )
+        if (days >= 0) {
+          updates['ownershipStats.totalDays'] = increment(days)
+          updates['ownershipStats.count']     = increment(1)
+        }
+      }
+      updateDoc(doc(db, 'products', item.productId), updates).catch(() => {})
+    }
   },
 
   async unarchive(id: string) {
     const uid = authState.user?.uid
     if (!uid) return
+    const item = state.items.find(i => i.id === id)
+    const prevMethod = item?.disposalMethod
     await updateDoc(doc(db, 'users', uid, 'items', id), {
       status: 'owned',
       disposalMethod: deleteField(),
       archivedAt:     deleteField(),
     })
+    if (item?.productId && prevMethod) {
+      updateDoc(doc(db, 'products', item.productId), {
+        [`disposalCounts.${prevMethod}`]: increment(-1),
+      }).catch(() => {})
+    }
   },
 
   async updateItemImage(id: string, customImageUrl: string) {
@@ -223,5 +248,69 @@ export const store = {
     notesTimer = setTimeout(() => {
       updateDoc(doc(db, 'users', uid, 'items', id), { notes })
     }, 800)
+  },
+
+  // タイトル・日付・金額などの任意フィールドを更新（debounce なし）
+  // 空文字・null → deleteField() に変換して Firestore からフィールド自体を削除
+  async updateItemFields(
+    id: string,
+    fields: Partial<Pick<ShelfItem, 'name' | 'creator' | 'category' | 'acquiredAt' | 'archivedAt' | 'acquirePrice' | 'sellPrice'>>,
+  ) {
+    const uid = authState.user?.uid
+    if (!uid) return
+    const item = state.items.find(i => i.id === id)
+
+    const payload: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(fields)) {
+      if (v === null || v === undefined || v === '' || (typeof v === 'number' && isNaN(v))) {
+        payload[k] = deleteField()
+      } else {
+        payload[k] = v
+      }
+    }
+    if (Object.keys(payload).length === 0) return
+    await updateDoc(doc(db, 'users', uid, 'items', id), payload)
+
+    // name 変更時は products の候補リストに追加
+    if (fields.name?.trim() && item?.productId) {
+      updateDoc(doc(db, 'products', item.productId), {
+        nameCandidates: arrayUnion(fields.name.trim()),
+      }).catch(() => {})
+    }
+  },
+
+  // debounce 付き（テキスト・数値フィールド用）
+  updateItemFieldsDebounced(
+    id: string,
+    fields: Partial<Pick<ShelfItem, 'name' | 'creator' | 'acquirePrice' | 'sellPrice'>>,
+  ) {
+    if (fieldsTimer) clearTimeout(fieldsTimer)
+    fieldsTimer = setTimeout(() => {
+      this.updateItemFields(id, fields)
+    }, 800)
+  },
+
+  // マップ表示切り替え
+  async updateMapVisibility(id: string, show: boolean) {
+    const uid = authState.user?.uid
+    if (!uid) return
+    const item = state.items.find(i => i.id === id)
+    if (!item) return
+
+    const currentShow = item.showOnMap !== false // undefined = true
+    if (currentShow === show) return
+
+    await updateDoc(doc(db, 'users', uid, 'items', id), { showOnMap: show })
+
+    if (item.productId) {
+      const { userProfileStore } = await import('./userProfile')
+      const p = userProfileStore.profile
+      if (p?.prefecture && p?.city) {
+        updateDoc(doc(db, 'products', item.productId), {
+          [`locationCounts.${p.prefecture}__${p.city}`]: increment(show ? 1 : -1),
+          hiddenFromMapCount: increment(show ? -1 : 1),
+        }).catch(() => {})
+      }
+    }
   },
 }

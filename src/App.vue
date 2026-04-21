@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import { authState } from './lib/auth'
 import GlobalToolbar from './components/GlobalToolbar.vue'
@@ -32,6 +32,11 @@ const showToolbar = computed(() =>
   route.name !== 'about' &&
   !!authState.user
 )
+
+// ログアウト時にモーダルを自動で閉じる
+watch(() => authState.user, (user) => {
+  if (!user) showAccountModal.value = false
+})
 </script>
 
 <style>
