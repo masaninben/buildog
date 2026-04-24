@@ -13,14 +13,14 @@ export interface BuildogProject {
   photoCount: number
 }
 
-export type ProjectPhotoTag = 'before' | 'during' | 'after' | 'material' | 'other'
+export type ProjectPhotoTag = 'before' | 'during' | 'after' | 'material' | 'untagged'
 
 export const PROJECT_PHOTO_TAG_LABELS: Record<ProjectPhotoTag, string> = {
   before: 'ビフォー',
-  during: '工程',
+  during: '施工中',
   after: 'アフター',
   material: '材料',
-  other: 'その他',
+  untagged: 'タグ未設定',
 }
 
 export interface ProjectPhoto {

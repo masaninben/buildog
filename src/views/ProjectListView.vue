@@ -62,7 +62,7 @@ const sizeOptions: { value: CardSize; label: string }[] = [
 
 const router = useRouter()
 const projects = computed(() => projectStore.projects)
-const defaultSize: CardSize = window.innerWidth <= 768 ? 'medium' : 'large'
+const defaultSize: CardSize = window.innerWidth <= 768 ? 'small' : 'medium'
 const cardSize = ref<CardSize>((localStorage.getItem(STORAGE_KEY) as CardSize | null) ?? defaultSize)
 
 function setCardSize(size: CardSize) {
@@ -145,17 +145,9 @@ function openProject(project: BuildogProject) {
   gap: 10px;
 }
 
-.project-grid--large {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.project-grid--medium {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.project-grid--small {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
+.project-grid--large { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.project-grid--medium { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.project-grid--small { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 
 .state-card,
 .empty-card {
@@ -201,11 +193,11 @@ function openProject(project: BuildogProject) {
   }
 
   .project-grid--medium {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   .project-grid--small {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(10, minmax(0, 1fr));
   }
 }
 

@@ -32,10 +32,11 @@
         </div>
 
         <div class="summary-card summary-card--wide">
-          <span class="summary-label">共有確認</span>
+          <span class="summary-label">共有導線</span>
           <div class="summary-actions">
             <button class="secondary-btn" @click="copyPublicUrl">公開URLをコピー</button>
             <button class="secondary-btn secondary-btn--accent" @click="previewPublicPage">公開ページをプレビュー</button>
+            <button class="secondary-btn secondary-btn--accent" @click="openQrModal">QR共有</button>
           </div>
           <code class="share-url">{{ publicUrl }}</code>
         </div>
@@ -45,7 +46,7 @@
         <div class="section-head">
           <div>
             <h2 class="section-title">写真をまとめて追加</h2>
-            <p class="section-copy">追加は簡単に、見せる順番はあとから整えられるようにしています。</p>
+            <p class="section-copy">一度に最大10枚。タグとメモを先に揃えてから追加できます。</p>
           </div>
         </div>
 
@@ -97,10 +98,13 @@
         <div class="section-head">
           <div>
             <h2 class="section-title">写真構成</h2>
-            <p class="section-copy">カテゴリごとに並べ、見せる順番はドラッグか上下ボタンで整えられます。</p>
+            <p class="section-copy">写真中心で全体像を把握しながら、公開・タグ・並び順をその場で整えられます。</p>
           </div>
 
           <div class="hero-actions">
+            <button class="secondary-btn" :class="{ 'secondary-btn--accent': selectionMode }" @click="toggleSelectionMode">
+              {{ selectionMode ? '選択終了' : '選択モード' }}
+            </button>
             <div class="size-switch">
               <button
                 v-for="option in sizeOptions"
@@ -112,6 +116,29 @@
                 {{ option.label }}
               </button>
             </div>
+          </div>
+        </div>
+
+        <div v-if="selectionMode" class="bulk-bar">
+          <div class="bulk-head">
+            <strong>{{ selectedPhotoIds.length }}枚選択中</strong>
+            <button class="text-btn" type="button" @click="clearSelectedPhotos">選択解除</button>
+          </div>
+          <div class="bulk-actions">
+            <button class="secondary-btn" type="button" :disabled="selectedPhotoIds.length === 0" @click="bulkSetVisibility(true)">まとめて公開</button>
+            <button class="secondary-btn" type="button" :disabled="selectedPhotoIds.length === 0" @click="bulkSetVisibility(false)">まとめて非公開</button>
+          </div>
+          <div class="tag-chips">
+            <button
+              v-for="tag in tagOptions"
+              :key="tag.value"
+              type="button"
+              class="tag-chip"
+              :disabled="selectedPhotoIds.length === 0"
+              @click="bulkSetTag(tag.value)"
+            >
+              {{ tag.label }}
+            </button>
           </div>
         </div>
 
@@ -129,17 +156,20 @@
                 v-for="(photo, index) in group.photos"
                 :key="photo.id"
                 class="photo-card"
-                :class="`photo-card--${photoCardSize}`"
+                :class="[`photo-card--${photoCardSize}`, { 'photo-card--selected': selectedPhotoIds.includes(photo.id) }]"
                 draggable="true"
                 @dragstart="onDragStart(group.key, photo.id)"
                 @dragover.prevent
                 @drop="onDrop(group.key, photo.id)"
-                @click="openPhotoModal(photo)"
+                @click="handlePhotoCardClick(photo)"
               >
                 <div class="photo-thumb-wrap">
                   <img :src="photo.url" class="photo-image" />
                   <div class="photo-overlay">
-                    <span class="photo-status" :class="{ public: photo.isPublic }">{{ photo.isPublic ? '公開' : '非公開' }}</span>
+                    <label v-if="selectionMode" class="check-badge" @click.stop>
+                      <input type="checkbox" :checked="selectedPhotoIds.includes(photo.id)" @change="togglePhotoSelection(photo.id)" />
+                    </label>
+                    <span v-else class="photo-status" :class="{ public: photo.isPublic }">{{ photo.isPublic ? '公開' : '非公開' }}</span>
                     <span v-if="project.coverPhotoId === photo.id" class="cover-badge">代表</span>
                   </div>
                 </div>
@@ -151,6 +181,9 @@
                   </div>
                   <p v-if="photo.memo" class="photo-caption">{{ photo.memo }}</p>
                   <div class="photo-actions">
+                    <button class="mini-toggle" :class="{ on: photo.isPublic }" type="button" @click.stop="togglePhotoPublic(photo)">
+                      {{ photo.isPublic ? '公開中' : '非公開' }}
+                    </button>
                     <button class="sort-btn" type="button" @click.stop="movePhoto(photo.id, 'up')">↑</button>
                     <button class="sort-btn" type="button" @click.stop="movePhoto(photo.id, 'down')">↓</button>
                     <button class="edit-btn" type="button" @click.stop="openPhotoModal(photo)">編集</button>
@@ -195,7 +228,7 @@
         <div class="modal-section">
           <label class="memo-field">
             <span class="field-label">メモ</span>
-            <textarea v-model="editMemo" class="field-textarea" rows="4" placeholder="顧客に伝えたい工程メモ" />
+            <textarea v-model="editMemo" class="field-textarea" rows="4" placeholder="顧客に伝えたい施工メモ" />
           </label>
         </div>
 
@@ -214,11 +247,31 @@
         </div>
       </div>
     </div>
+
+    <div v-if="showQrModal" class="modal-overlay" @click.self="closeQrModal">
+      <div class="modal-card modal-card--narrow">
+        <div class="modal-head">
+          <h3 class="modal-title">QR共有</h3>
+          <button class="close-btn" type="button" @click="closeQrModal">✕</button>
+        </div>
+        <div class="qr-wrap">
+          <img v-if="qrDataUrl" :src="qrDataUrl" class="qr-image" />
+          <p class="helper-text">スマホで施工写真をご確認いただけます</p>
+          <code class="share-url">{{ publicUrl }}</code>
+        </div>
+        <div class="modal-actions">
+          <button class="secondary-btn" type="button" @click="copyPublicUrl">URLをコピー</button>
+          <button class="upload-btn" type="button" @click="downloadSharePdf">PDFチラシを作成</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { jsPDF } from 'jspdf'
+import QRCode from 'qrcode'
 import { useRoute, useRouter } from 'vue-router'
 import PhotoUpload from '../components/PhotoUpload.vue'
 import { projectStore } from '../store/projects'
@@ -231,7 +284,7 @@ interface PendingUpload {
 }
 
 type CardSize = 'small' | 'medium' | 'large'
-type GroupKey = 'before' | 'during_material' | 'after' | 'other'
+type GroupKey = 'before' | 'during_material' | 'after' | 'untagged'
 
 const PHOTO_SIZE_STORAGE_KEY = 'buildog_photo_card_size'
 
@@ -244,18 +297,24 @@ const isLoading = computed(() => !projectStore.loaded)
 
 const photoUploadRef = ref<InstanceType<typeof PhotoUpload> | null>(null)
 const uploadMemo = ref('')
-const uploadTag = ref<ProjectPhotoTag>('during')
+const uploadTag = ref<ProjectPhotoTag>('untagged')
 const pendingFiles = ref<PendingUpload[]>([])
 const uploadingPending = ref(false)
 const photoCardSize = ref<CardSize>((localStorage.getItem(PHOTO_SIZE_STORAGE_KEY) as CardSize | null) ?? 'medium')
 
 const editingPhoto = ref<ProjectPhoto | null>(null)
-const editTag = ref<ProjectPhotoTag>('during')
+const editTag = ref<ProjectPhotoTag>('untagged')
 const editMemo = ref('')
 const editIsPublic = ref(false)
 
+const selectionMode = ref(false)
+const selectedPhotoIds = ref<string[]>([])
+
 const draggingPhotoId = ref<string | null>(null)
 const draggingGroupKey = ref<GroupKey | null>(null)
+
+const showQrModal = ref(false)
+const qrDataUrl = ref('')
 
 const sizeOptions: { value: CardSize; label: string }[] = [
   { value: 'small', label: '小' },
@@ -278,7 +337,7 @@ const groupedPhotos = computed(() => {
     { key: 'before', title: 'ビフォー', photos: [] },
     { key: 'during_material', title: '施工中・材料', photos: [] },
     { key: 'after', title: 'アフター', photos: [] },
-    { key: 'other', title: 'その他', photos: [] },
+    { key: 'untagged', title: 'タグ未設定', photos: [] },
   ]
 
   for (const photo of photos.value) {
@@ -331,7 +390,7 @@ async function uploadPendingFiles() {
     )
     clearPendingFiles()
     uploadMemo.value = ''
-    uploadTag.value = 'during'
+    uploadTag.value = 'untagged'
   } finally {
     uploadingPending.value = false
   }
@@ -346,6 +405,46 @@ async function toggleProjectPublic() {
 
 async function movePhoto(photoId: string, direction: 'up' | 'down') {
   await projectStore.movePhoto(projectId.value, photoId, direction)
+}
+
+async function togglePhotoPublic(photo: ProjectPhoto) {
+  await projectStore.updatePhotoVisibility(projectId.value, photo.id, !photo.isPublic)
+}
+
+function handlePhotoCardClick(photo: ProjectPhoto) {
+  if (selectionMode.value) {
+    togglePhotoSelection(photo.id)
+    return
+  }
+  openPhotoModal(photo)
+}
+
+function toggleSelectionMode() {
+  selectionMode.value = !selectionMode.value
+  if (!selectionMode.value) {
+    clearSelectedPhotos()
+  }
+}
+
+function togglePhotoSelection(photoId: string) {
+  const set = new Set(selectedPhotoIds.value)
+  if (set.has(photoId)) set.delete(photoId)
+  else set.add(photoId)
+  selectedPhotoIds.value = [...set]
+}
+
+function clearSelectedPhotos() {
+  selectedPhotoIds.value = []
+}
+
+async function bulkSetVisibility(isPublic: boolean) {
+  await projectStore.updatePhotosBulk(projectId.value, selectedPhotoIds.value, { isPublic })
+  clearSelectedPhotos()
+}
+
+async function bulkSetTag(tag: ProjectPhotoTag) {
+  await projectStore.updatePhotosBulk(projectId.value, selectedPhotoIds.value, { tag })
+  clearSelectedPhotos()
 }
 
 function openPhotoModal(photo: ProjectPhoto) {
@@ -391,8 +490,46 @@ function previewPublicPage() {
   window.open(publicUrl.value, '_blank', 'noopener,noreferrer')
 }
 
+async function openQrModal() {
+  qrDataUrl.value = await QRCode.toDataURL(publicUrl.value, { width: 360, margin: 1 })
+  showQrModal.value = true
+}
+
+function closeQrModal() {
+  showQrModal.value = false
+}
+
+async function downloadSharePdf() {
+  if (!project.value) return
+  if (!qrDataUrl.value) {
+    qrDataUrl.value = await QRCode.toDataURL(publicUrl.value, { width: 360, margin: 1 })
+  }
+
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  pdf.setFillColor(15, 23, 32)
+  pdf.rect(0, 0, 210, 297, 'F')
+  pdf.setTextColor(255, 122, 26)
+  pdf.setFontSize(24)
+  pdf.text('Buildog', 20, 28)
+  pdf.setTextColor(238, 244, 248)
+  pdf.setFontSize(22)
+  pdf.text(project.value.name, 20, 46, { maxWidth: 170 })
+  pdf.setFontSize(14)
+  if (project.value.clientName) {
+    pdf.text(`顧客名: ${project.value.clientName}`, 20, 58)
+  }
+  pdf.addImage(qrDataUrl.value, 'PNG', 55, 80, 100, 100)
+  pdf.setFontSize(16)
+  pdf.text('スマホで施工写真をご確認いただけます', 32, 195)
+  pdf.setFontSize(11)
+  pdf.text('QRコードを読み取ると、公開中の施工写真ページが開きます。', 28, 205)
+  pdf.text(publicUrl.value, 20, 225, { maxWidth: 170 })
+  pdf.save(`buildog-share-${project.value.name}.pdf`)
+}
+
 function triggerUploaderFocus() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
+  photoUploadRef.value?.openPicker()
 }
 
 function onDragStart(groupKey: GroupKey, photoId: string) {
@@ -446,20 +583,17 @@ function formatDateTime(value: string) {
 .modal-section--row,
 .summary-actions,
 .group-head,
-.hero-actions {
+.hero-actions,
+.bulk-head,
+.bulk-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.page-head {
-  align-items: flex-start;
-}
-
-.page-head-main {
-  flex: 1;
-}
+.page-head { align-items: flex-start; }
+.page-head-main { flex: 1; }
 
 .page-eyebrow {
   color: var(--accent);
@@ -479,7 +613,8 @@ function formatDateTime(value: string) {
 .section-copy,
 .photo-date,
 .timeline-empty,
-.group-count {
+.group-count,
+.helper-text {
   color: var(--text-sub);
 }
 
@@ -489,7 +624,7 @@ function formatDateTime(value: string) {
 .edit-btn,
 .close-btn,
 .size-btn {
-  height: 40px;
+  min-height: 38px;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--bg-card);
@@ -498,24 +633,21 @@ function formatDateTime(value: string) {
   cursor: pointer;
 }
 
-.secondary-btn--accent {
-  color: var(--accent);
-}
+.secondary-btn--accent { color: var(--accent); }
 
 .state-card,
 .summary-card,
 .upload-card,
 .photos-card,
-.modal-card {
+.modal-card,
+.bulk-bar {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 20px;
   box-shadow: var(--shadow-sm);
 }
 
-.state-card {
-  padding: 24px;
-}
+.state-card { padding: 24px; }
 
 .summary-grid {
   display: grid;
@@ -568,9 +700,7 @@ function formatDateTime(value: string) {
   cursor: pointer;
 }
 
-.toggle-switch.on {
-  background: var(--accent);
-}
+.toggle-switch.on { background: var(--accent); }
 
 .toggle-thumb {
   display: block;
@@ -582,25 +712,19 @@ function formatDateTime(value: string) {
   transition: transform 0.15s ease;
 }
 
-.toggle-switch.on .toggle-thumb {
-  transform: translateX(22px);
-}
+.toggle-switch.on .toggle-thumb { transform: translateX(22px); }
 
 .upload-card,
-.photos-card {
+.photos-card,
+.bulk-bar {
   padding: 16px;
   display: grid;
   gap: 16px;
 }
 
-.section-title {
-  font-size: 18px;
-}
+.section-title { font-size: 18px; }
 
-.upload-controls {
-  display: grid;
-  gap: 14px;
-}
+.upload-controls { display: grid; gap: 14px; }
 
 .tag-chips {
   display: flex;
@@ -610,8 +734,8 @@ function formatDateTime(value: string) {
 }
 
 .tag-chip {
-  min-height: 38px;
-  padding: 0 14px;
+  min-height: 36px;
+  padding: 0 12px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg-input);
@@ -624,6 +748,11 @@ function formatDateTime(value: string) {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+}
+
+.tag-chip:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .memo-field {
@@ -649,10 +778,7 @@ function formatDateTime(value: string) {
   background: var(--bg-surface);
 }
 
-.pending-actions {
-  display: flex;
-  gap: 8px;
-}
+.pending-actions { display: flex; gap: 8px; }
 
 .pending-grid {
   display: grid;
@@ -674,7 +800,7 @@ function formatDateTime(value: string) {
 
 .upload-btn,
 .fab-add-btn {
-  height: 44px;
+  min-height: 42px;
   border: none;
   border-radius: 14px;
   background: var(--accent);
@@ -685,7 +811,7 @@ function formatDateTime(value: string) {
 }
 
 .text-btn {
-  height: 44px;
+  min-height: 38px;
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -723,7 +849,7 @@ function formatDateTime(value: string) {
 
 .photo-grid {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .photo-grid--large {
@@ -731,24 +857,24 @@ function formatDateTime(value: string) {
 }
 
 .photo-grid--medium {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.photo-grid--small {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.photo-grid--small {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
 .photo-card {
-  border-radius: 16px;
+  border-radius: 14px;
   overflow: hidden;
   background: var(--bg-surface);
   border: 1px solid var(--border-faint);
   cursor: pointer;
 }
 
-.photo-card--small .photo-meta-row {
-  flex-direction: column;
-  align-items: flex-start;
+.photo-card--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255, 122, 26, 0.22);
 }
 
 .photo-thumb-wrap {
@@ -764,7 +890,7 @@ function formatDateTime(value: string) {
 
 .photo-overlay {
   position: absolute;
-  inset: 8px 8px auto 8px;
+  inset: 6px 6px auto 6px;
   display: flex;
   justify-content: space-between;
   gap: 6px;
@@ -772,9 +898,10 @@ function formatDateTime(value: string) {
 
 .photo-status,
 .cover-badge,
-.photo-tag {
+.photo-tag,
+.check-badge {
   width: fit-content;
-  padding: 5px 8px;
+  padding: 4px 7px;
   border-radius: 999px;
   font-size: 10px;
   font-weight: 700;
@@ -789,13 +916,18 @@ function formatDateTime(value: string) {
   background: rgba(84, 176, 125, 0.92);
 }
 
+.check-badge {
+  background: rgba(15, 23, 32, 0.72);
+  color: #fff;
+}
+
 .cover-badge {
   background: rgba(255, 122, 26, 0.92);
   color: #fff;
 }
 
 .photo-body {
-  padding: 8px;
+  padding: 6px;
 }
 
 .photo-meta-row {
@@ -808,9 +940,8 @@ function formatDateTime(value: string) {
 }
 
 .photo-caption {
-  margin-top: 8px;
-  font-size: 12px;
-  line-height: 1.5;
+  margin-top: 6px;
+  line-height: 1.45;
   color: var(--text-sub);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -818,18 +949,59 @@ function formatDateTime(value: string) {
   overflow: hidden;
 }
 
+.photo-card--large .photo-caption {
+  font-size: 12px;
+}
+
+.photo-card--medium .photo-caption {
+  font-size: 10px;
+}
+
+.photo-card--small .photo-caption {
+  display: none;
+}
+
 .photo-actions {
-  margin-top: 8px;
+  margin-top: 6px;
   justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.mini-toggle {
+  min-height: 30px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 999px;
+  background: var(--bg-input);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mini-toggle.on {
+  background: var(--success-bg);
+  color: var(--success);
 }
 
 .sort-btn {
-  width: 36px;
+  width: 32px;
+  min-width: 32px;
   padding: 0;
 }
 
 .edit-btn {
   color: var(--accent);
+}
+
+.bulk-bar {
+  gap: 12px;
+}
+
+.bulk-head,
+.bulk-actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 .fab-add-btn {
@@ -860,6 +1032,10 @@ function formatDateTime(value: string) {
   gap: 14px;
 }
 
+.modal-card--narrow {
+  width: min(100%, 420px);
+}
+
 .modal-title {
   font-size: 18px;
 }
@@ -884,7 +1060,7 @@ function formatDateTime(value: string) {
 }
 
 .danger-btn {
-  height: 40px;
+  min-height: 40px;
   padding: 0 14px;
   border: none;
   border-radius: 12px;
@@ -894,17 +1070,31 @@ function formatDateTime(value: string) {
   cursor: pointer;
 }
 
+.qr-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.qr-image {
+  width: 220px;
+  height: 220px;
+  border-radius: 16px;
+  background: #fff;
+  padding: 12px;
+}
+
 @media (min-width: 900px) {
   .photo-grid--large {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .photo-grid--medium {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   .photo-grid--small {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(10, minmax(0, 1fr));
   }
 }
 

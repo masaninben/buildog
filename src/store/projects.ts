@@ -74,6 +74,12 @@ function normalizeProject(id: string, data: Record<string, unknown>): BuildogPro
 }
 
 function normalizePhoto(id: string, data: Record<string, unknown>): ProjectPhoto {
+  const rawTag = String(data.tag ?? 'untagged')
+  const tag: ProjectPhotoTag = rawTag === 'other' ? 'untagged' : (
+    rawTag === 'before' || rawTag === 'during' || rawTag === 'after' || rawTag === 'material' || rawTag === 'untagged'
+      ? rawTag
+      : 'untagged'
+  )
   return {
     id,
     url: String(data.url ?? ''),
@@ -81,7 +87,7 @@ function normalizePhoto(id: string, data: Record<string, unknown>): ProjectPhoto
     createdAt: toIsoString(data.createdAt),
     uploadedBy: String(data.uploadedBy ?? ''),
     isPublic: Boolean(data.isPublic),
-    tag: (data.tag as ProjectPhotoTag) ?? 'other',
+    tag,
     memo: String(data.memo ?? ''),
     sortOrder: typeof data.sortOrder === 'number' ? data.sortOrder : null,
   }
@@ -229,7 +235,7 @@ export const projectStore = {
         createdAt: serverTimestamp(),
         uploadedBy: uid,
         isPublic: false,
-        tag: options?.tag ?? 'other',
+        tag: options?.tag ?? 'untagged',
         memo: options?.memo?.trim() ?? '',
         sortOrder: startOrder + index,
       })
@@ -288,6 +294,35 @@ export const projectStore = {
     if (fields.sortOrder !== undefined) payload.sortOrder = fields.sortOrder
 
     await updateDoc(doc(db, 'projects', projectId, 'photos', photoId), payload)
+    await updateDoc(projectRef(projectId), {
+      updatedAt: serverTimestamp(),
+    })
+    if (fields.isPublic !== undefined) {
+      await this.refreshProjectCover(projectId)
+    }
+  },
+
+  async updatePhotosBulk(
+    projectId: string,
+    photoIds: string[],
+    fields: Partial<Pick<ProjectPhoto, 'tag' | 'isPublic'>>
+  ) {
+    const uid = authState.user?.uid
+    if (!uid || photoIds.length === 0) return
+    const project = state.projects.find((entry) => entry.id === projectId)
+    if (!project || project.ownerId !== uid) return
+
+    const payload: Record<string, unknown> = {}
+    if (fields.tag !== undefined) payload.tag = fields.tag
+    if (fields.isPublic !== undefined) payload.isPublic = fields.isPublic
+    if (Object.keys(payload).length === 0) return
+
+    await Promise.all(
+      photoIds.map((photoId) =>
+        updateDoc(doc(db, 'projects', projectId, 'photos', photoId), payload)
+      )
+    )
+
     await updateDoc(projectRef(projectId), {
       updatedAt: serverTimestamp(),
     })
