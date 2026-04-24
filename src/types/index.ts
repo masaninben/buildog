@@ -9,6 +9,7 @@ export interface BuildogProject {
   isPublic: boolean
   publicSlug: string
   coverPhotoUrl: string
+  coverPhotoId: string
   photoCount: number
 }
 

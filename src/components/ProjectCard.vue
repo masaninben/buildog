@@ -33,8 +33,8 @@
 <script setup lang="ts">
 import type { BuildogProject } from '../types'
 
-withDefaults(defineProps<{ project: BuildogProject; size?: 'small' | 'medium' }>(), {
-  size: 'small',
+withDefaults(defineProps<{ project: BuildogProject; size?: 'small' | 'medium' | 'large' }>(), {
+  size: 'medium',
 })
 defineEmits<{ click: [project: BuildogProject] }>()
 
@@ -55,33 +55,14 @@ function formatDate(value: string) {
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-.project-card--small .cover-wrap {
-  aspect-ratio: 1.2 / 1;
-}
-
-.project-card--small .card-body {
-  padding: 10px;
-  gap: 8px;
-}
-
-.project-card--small .card-title {
-  font-size: 14px;
-}
-
-.project-card--small .card-meta,
-.project-card--small .card-footer {
-  font-size: 11px;
-}
-
 .project-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
   border-color: var(--border-accent);
 }
 
 .cover-wrap {
   width: 100%;
-  aspect-ratio: 4 / 3;
   background:
     linear-gradient(135deg, rgba(255, 122, 26, 0.14), rgba(255, 255, 255, 0) 55%),
     linear-gradient(180deg, rgba(18, 26, 34, 0.85), rgba(18, 26, 34, 0.95));
@@ -100,56 +81,46 @@ function formatDate(value: string) {
 .cover-fallback {
   width: 100%;
   height: 100%;
-  padding: 18px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
   color: #fff;
 }
 
 .cover-fallback-badge {
   width: fit-content;
-  padding: 6px 10px;
+  padding: 5px 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
 .cover-fallback-title {
-  font-size: 18px;
   font-weight: 800;
   line-height: 1.4;
 }
 
 .card-body {
-  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
 .card-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-}
-
-.card-title {
-  font-size: 16px;
-  line-height: 1.4;
+  gap: 8px;
 }
 
 .card-status {
   flex-shrink: 0;
-  padding: 5px 8px;
   border-radius: 999px;
   background: var(--bg-subtle);
   color: var(--text-muted);
-  font-size: 11px;
   font-weight: 700;
 }
 
@@ -160,7 +131,6 @@ function formatDate(value: string) {
 
 .card-meta {
   color: var(--text-sub);
-  font-size: 13px;
 }
 
 .card-footer {
@@ -168,6 +138,80 @@ function formatDate(value: string) {
   align-items: center;
   justify-content: space-between;
   color: var(--text-muted);
+}
+
+.project-card--large .cover-wrap {
+  aspect-ratio: 1.2 / 1;
+}
+
+.project-card--large .card-body {
+  padding: 10px;
+  gap: 8px;
+}
+
+.project-card--large .cover-fallback-title,
+.project-card--large .card-title {
+  font-size: 14px;
+}
+
+.project-card--large .card-meta,
+.project-card--large .card-footer,
+.project-card--large .card-status {
+  font-size: 11px;
+}
+
+.project-card--large .card-status {
+  padding: 4px 7px;
+}
+
+.project-card--medium .cover-wrap {
+  aspect-ratio: 1 / 1;
+}
+
+.project-card--medium .card-body {
+  padding: 8px;
+  gap: 6px;
+}
+
+.project-card--medium .cover-fallback-title,
+.project-card--medium .card-title {
   font-size: 12px;
+}
+
+.project-card--medium .card-meta,
+.project-card--medium .card-footer,
+.project-card--medium .card-status {
+  font-size: 10px;
+}
+
+.project-card--medium .card-status {
+  padding: 3px 6px;
+}
+
+.project-card--small .cover-wrap {
+  aspect-ratio: 1 / 1;
+}
+
+.project-card--small .card-body {
+  padding: 6px;
+  gap: 4px;
+}
+
+.project-card--small .cover-fallback-title,
+.project-card--small .card-title {
+  font-size: 10px;
+}
+
+.project-card--small .card-meta {
+  display: none;
+}
+
+.project-card--small .card-footer,
+.project-card--small .card-status {
+  font-size: 9px;
+}
+
+.project-card--small .card-status {
+  padding: 2px 5px;
 }
 </style>

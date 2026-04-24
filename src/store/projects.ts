@@ -68,6 +68,7 @@ function normalizeProject(id: string, data: Record<string, unknown>): BuildogPro
     isPublic: Boolean(data.isPublic),
     publicSlug: String(data.publicSlug ?? ''),
     coverPhotoUrl: String(data.coverPhotoUrl ?? ''),
+    coverPhotoId: String(data.coverPhotoId ?? ''),
     photoCount: Number(data.photoCount ?? 0),
   }
 }
@@ -174,6 +175,7 @@ export const projectStore = {
       isPublic: false,
       publicSlug: '',
       coverPhotoUrl: '',
+      coverPhotoId: '',
       photoCount: 0,
     })
 
@@ -183,14 +185,35 @@ export const projectStore = {
     return ref.id
   },
 
+  async refreshProjectCover(projectId: string) {
+    const project = state.projects.find((entry) => entry.id === projectId)
+    let currentPhotos = sortPhotos(state.photosByProject[projectId] ?? [])
+    if (currentPhotos.length === 0) {
+      const snap = await getDocs(projectPhotosRef(projectId))
+      currentPhotos = sortPhotos(snap.docs.map((entry) => normalizePhoto(entry.id, entry.data())))
+    }
+
+    let cover: ProjectPhoto | undefined
+    if (project?.coverPhotoId) {
+      cover = currentPhotos.find((photo) => photo.id === project.coverPhotoId)
+    }
+    if (!cover) {
+      cover = currentPhotos.find((photo) => photo.isPublic) ?? [...currentPhotos].reverse()[0]
+    }
+
+    await updateDoc(projectRef(projectId), {
+      coverPhotoId: cover?.id ?? '',
+      coverPhotoUrl: cover?.url ?? '',
+      updatedAt: serverTimestamp(),
+    })
+  },
+
   async addPhotos(projectId: string, files: File[], options?: { memo?: string; tag?: ProjectPhotoTag }) {
     const uid = authState.user?.uid
     if (!uid || files.length === 0) return
 
     const currentPhotos = sortPhotos(state.photosByProject[projectId] ?? [])
     const startOrder = currentPhotos.reduce((max, photo) => Math.max(max, photo.sortOrder ?? 0), 0) + 1
-    let coverPhotoUrl = ''
-
     for (const [index, file] of files.entries()) {
       const photoDoc = doc(projectPhotosRef(projectId))
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
@@ -199,7 +222,6 @@ export const projectStore = {
 
       await uploadBytes(fileRef, file)
       const url = await getDownloadURL(fileRef)
-      coverPhotoUrl = url
 
       await setDoc(photoDoc, {
         url,
@@ -215,9 +237,9 @@ export const projectStore = {
 
     await updateDoc(projectRef(projectId), {
       updatedAt: serverTimestamp(),
-      coverPhotoUrl,
       photoCount: increment(files.length),
     })
+    await this.refreshProjectCover(projectId)
   },
 
   async updateProject(projectId: string, fields: Partial<Pick<BuildogProject, 'name' | 'clientName' | 'siteAddress' | 'isPublic'>>) {
@@ -250,6 +272,7 @@ export const projectStore = {
     await updateDoc(projectRef(projectId), {
       updatedAt: serverTimestamp(),
     })
+    await this.refreshProjectCover(projectId)
   },
 
   async updatePhoto(projectId: string, photoId: string, fields: Partial<Pick<ProjectPhoto, 'tag' | 'memo' | 'isPublic' | 'sortOrder'>>) {
@@ -266,6 +289,23 @@ export const projectStore = {
 
     await updateDoc(doc(db, 'projects', projectId, 'photos', photoId), payload)
     await updateDoc(projectRef(projectId), {
+      updatedAt: serverTimestamp(),
+    })
+    if (fields.isPublic !== undefined) {
+      await this.refreshProjectCover(projectId)
+    }
+  },
+
+  async setProjectCover(projectId: string, photoId: string) {
+    const uid = authState.user?.uid
+    if (!uid) return
+    const project = state.projects.find((entry) => entry.id === projectId)
+    const photo = (state.photosByProject[projectId] ?? []).find((entry) => entry.id === photoId)
+    if (!project || project.ownerId !== uid || !photo) return
+
+    await updateDoc(projectRef(projectId), {
+      coverPhotoId: photo.id,
+      coverPhotoUrl: photo.url,
       updatedAt: serverTimestamp(),
     })
   },
@@ -287,9 +327,14 @@ export const projectStore = {
     const nextPhotos = sortPhotos((state.photosByProject[projectId] ?? []).filter((entry) => entry.id !== photoId))
     await updateDoc(projectRef(projectId), {
       updatedAt: serverTimestamp(),
-      coverPhotoUrl: nextPhotos[0]?.url ?? '',
       photoCount: increment(-1),
     })
+    if (project.coverPhotoId === photoId) {
+      await updateDoc(projectRef(projectId), {
+        coverPhotoId: '',
+      })
+    }
+    await this.refreshProjectCover(projectId)
   },
 
   async movePhoto(projectId: string, photoId: string, direction: 'up' | 'down') {
@@ -312,6 +357,25 @@ export const projectStore = {
     await Promise.all(
       next.map((photo, index) =>
         updateDoc(doc(db, 'projects', projectId, 'photos', photo.id), {
+          sortOrder: index + 1,
+        })
+      )
+    )
+
+    await updateDoc(projectRef(projectId), {
+      updatedAt: serverTimestamp(),
+    })
+  },
+
+  async reorderPhotos(projectId: string, orderedIds: string[]) {
+    const uid = authState.user?.uid
+    if (!uid) return
+    const project = state.projects.find((entry) => entry.id === projectId)
+    if (!project || project.ownerId !== uid) return
+
+    await Promise.all(
+      orderedIds.map((photoId, index) =>
+        updateDoc(doc(db, 'projects', projectId, 'photos', photoId), {
           sortOrder: index + 1,
         })
       )

@@ -45,11 +45,11 @@
         <div class="section-head">
           <div>
             <h2 class="section-title">写真をまとめて追加</h2>
-            <p class="section-copy">アップ前にタグとメモを揃えて、顧客に見せる構成を整えます。</p>
+            <p class="section-copy">追加は簡単に、見せる順番はあとから整えられるようにしています。</p>
           </div>
         </div>
 
-        <PhotoUpload :upload-path="`projects/${project.id}`" @select="onFilesSelected" />
+        <PhotoUpload ref="photoUploadRef" :upload-path="`projects/${project.id}`" @select="onFilesSelected" />
 
         <div class="upload-controls">
           <div>
@@ -70,7 +70,7 @@
 
           <label class="memo-field">
             <span class="field-label">まとめて入れるメモ</span>
-            <input v-model="uploadMemo" class="field-input" type="text" placeholder="例）解体前 / 断熱材施工 / 完成引き渡し前" />
+            <input v-model="uploadMemo" class="field-input" type="text" placeholder="例）解体前 / 下地施工 / 完成引渡し前" />
           </label>
         </div>
 
@@ -88,48 +88,77 @@
           <div class="pending-grid">
             <article v-for="file in pendingFiles" :key="file.id" class="pending-card">
               <img :src="file.previewUrl" class="pending-image" />
-              <div class="pending-meta">
-                <span class="pending-name">{{ file.file.name }}</span>
-                <span class="pending-size">{{ formatFileSize(file.file.size) }}</span>
-              </div>
             </article>
           </div>
         </div>
       </section>
 
       <section class="photos-card">
-        <div class="section-head section-head--tight">
+        <div class="section-head">
           <div>
             <h2 class="section-title">写真構成</h2>
-            <p class="section-copy">一覧性を優先し、タップで詳細編集できます。順番は上下ボタンで調整します。</p>
+            <p class="section-copy">カテゴリごとに並べ、見せる順番はドラッグか上下ボタンで整えられます。</p>
+          </div>
+
+          <div class="hero-actions">
+            <div class="size-switch">
+              <button
+                v-for="option in sizeOptions"
+                :key="option.value"
+                class="size-btn"
+                :class="{ active: photoCardSize === option.value }"
+                @click="setPhotoCardSize(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
           </div>
         </div>
 
         <div v-if="photos.length === 0" class="timeline-empty">まだ写真がありません</div>
 
-        <div v-else class="photo-grid">
-          <article v-for="(photo, index) in photos" :key="photo.id" class="photo-card" @click="openPhotoModal(photo)">
-            <div class="photo-thumb-wrap">
-              <img :src="photo.url" class="photo-image" />
-              <div class="photo-overlay">
-                <span class="photo-status" :class="{ public: photo.isPublic }">{{ photo.isPublic ? '公開中' : '非公開' }}</span>
-                <span class="photo-order">#{{ index + 1 }}</span>
-              </div>
+        <div v-else class="group-stack">
+          <section v-for="group in groupedPhotos" :key="group.key" class="photo-group">
+            <div class="group-head">
+              <h3 class="group-title">{{ group.title }}</h3>
+              <span class="group-count">{{ group.photos.length }}枚</span>
             </div>
 
-            <div class="photo-body">
-              <div class="photo-meta-row">
-                <span class="photo-tag">{{ PROJECT_PHOTO_TAG_LABELS[photo.tag] }}</span>
-                <span class="photo-date">{{ formatDateTime(photo.createdAt) }}</span>
-              </div>
-              <p v-if="photo.memo" class="photo-caption">{{ photo.memo }}</p>
-              <div class="photo-actions">
-                <button class="sort-btn" type="button" @click.stop="movePhoto(photo.id, 'up')">↑</button>
-                <button class="sort-btn" type="button" @click.stop="movePhoto(photo.id, 'down')">↓</button>
-                <button class="edit-btn" type="button" @click.stop="openPhotoModal(photo)">編集</button>
-              </div>
+            <div class="photo-grid" :class="`photo-grid--${photoCardSize}`">
+              <article
+                v-for="(photo, index) in group.photos"
+                :key="photo.id"
+                class="photo-card"
+                :class="`photo-card--${photoCardSize}`"
+                draggable="true"
+                @dragstart="onDragStart(group.key, photo.id)"
+                @dragover.prevent
+                @drop="onDrop(group.key, photo.id)"
+                @click="openPhotoModal(photo)"
+              >
+                <div class="photo-thumb-wrap">
+                  <img :src="photo.url" class="photo-image" />
+                  <div class="photo-overlay">
+                    <span class="photo-status" :class="{ public: photo.isPublic }">{{ photo.isPublic ? '公開' : '非公開' }}</span>
+                    <span v-if="project.coverPhotoId === photo.id" class="cover-badge">代表</span>
+                  </div>
+                </div>
+
+                <div class="photo-body">
+                  <div class="photo-meta-row">
+                    <span class="photo-tag">{{ PROJECT_PHOTO_TAG_LABELS[photo.tag] }}</span>
+                    <span class="photo-date">{{ index + 1 }}</span>
+                  </div>
+                  <p v-if="photo.memo" class="photo-caption">{{ photo.memo }}</p>
+                  <div class="photo-actions">
+                    <button class="sort-btn" type="button" @click.stop="movePhoto(photo.id, 'up')">↑</button>
+                    <button class="sort-btn" type="button" @click.stop="movePhoto(photo.id, 'down')">↓</button>
+                    <button class="edit-btn" type="button" @click.stop="openPhotoModal(photo)">編集</button>
+                  </div>
+                </div>
+              </article>
             </div>
-          </article>
+          </section>
         </div>
       </section>
     </template>
@@ -166,7 +195,7 @@
         <div class="modal-section">
           <label class="memo-field">
             <span class="field-label">メモ</span>
-            <textarea v-model="editMemo" class="field-textarea" rows="4" placeholder="顧客に伝えたい内容や工程メモ" />
+            <textarea v-model="editMemo" class="field-textarea" rows="4" placeholder="顧客に伝えたい工程メモ" />
           </label>
         </div>
 
@@ -178,6 +207,7 @@
         </div>
 
         <div class="modal-actions">
+          <button class="secondary-btn secondary-btn--accent" type="button" @click="setCoverPhoto">代表画像に設定</button>
           <button class="danger-btn" type="button" @click="deleteEditingPhoto">削除</button>
           <button class="secondary-btn" type="button" @click="closePhotoModal">キャンセル</button>
           <button class="upload-btn" type="button" @click="savePhotoEdits">保存する</button>
@@ -200,6 +230,11 @@ interface PendingUpload {
   previewUrl: string
 }
 
+type CardSize = 'small' | 'medium' | 'large'
+type GroupKey = 'before' | 'during_material' | 'after' | 'other'
+
+const PHOTO_SIZE_STORAGE_KEY = 'buildog_photo_card_size'
+
 const route = useRoute()
 const router = useRouter()
 const projectId = computed(() => route.params.id as string)
@@ -207,15 +242,26 @@ const project = computed(() => projectStore.getProjectById(projectId.value))
 const photos = computed(() => projectStore.getPhotos(projectId.value))
 const isLoading = computed(() => !projectStore.loaded)
 
+const photoUploadRef = ref<InstanceType<typeof PhotoUpload> | null>(null)
 const uploadMemo = ref('')
 const uploadTag = ref<ProjectPhotoTag>('during')
 const pendingFiles = ref<PendingUpload[]>([])
 const uploadingPending = ref(false)
+const photoCardSize = ref<CardSize>((localStorage.getItem(PHOTO_SIZE_STORAGE_KEY) as CardSize | null) ?? 'medium')
 
 const editingPhoto = ref<ProjectPhoto | null>(null)
 const editTag = ref<ProjectPhotoTag>('during')
 const editMemo = ref('')
 const editIsPublic = ref(false)
+
+const draggingPhotoId = ref<string | null>(null)
+const draggingGroupKey = ref<GroupKey | null>(null)
+
+const sizeOptions: { value: CardSize; label: string }[] = [
+  { value: 'small', label: '小' },
+  { value: 'medium', label: '中' },
+  { value: 'large', label: '大' },
+]
 
 const tagOptions = Object.entries(PROJECT_PHOTO_TAG_LABELS).map(([value, label]) => ({
   value: value as ProjectPhotoTag,
@@ -227,6 +273,24 @@ const publicUrl = computed(() => {
   return `${window.location.origin}/p/${slug}`
 })
 
+const groupedPhotos = computed(() => {
+  const groups: { key: GroupKey; title: string; photos: ProjectPhoto[] }[] = [
+    { key: 'before', title: 'ビフォー', photos: [] },
+    { key: 'during_material', title: '施工中・材料', photos: [] },
+    { key: 'after', title: 'アフター', photos: [] },
+    { key: 'other', title: 'その他', photos: [] },
+  ]
+
+  for (const photo of photos.value) {
+    if (photo.tag === 'before') groups[0].photos.push(photo)
+    else if (photo.tag === 'during' || photo.tag === 'material') groups[1].photos.push(photo)
+    else if (photo.tag === 'after') groups[2].photos.push(photo)
+    else groups[3].photos.push(photo)
+  }
+
+  return groups.filter((group) => group.photos.length > 0)
+})
+
 onMounted(() => {
   projectStore.subscribePhotos(projectId.value)
 })
@@ -236,13 +300,18 @@ onBeforeUnmount(() => {
   clearPendingFiles()
 })
 
+function setPhotoCardSize(size: CardSize) {
+  photoCardSize.value = size
+  localStorage.setItem(PHOTO_SIZE_STORAGE_KEY, size)
+}
+
 function onFilesSelected(files: File[]) {
   const additions = files.map((file, index) => ({
     id: `${file.name}-${file.lastModified}-${index}`,
     file,
     previewUrl: URL.createObjectURL(file),
   }))
-  pendingFiles.value = [...pendingFiles.value, ...additions]
+  pendingFiles.value = [...pendingFiles.value, ...additions].slice(0, 10)
 }
 
 function clearPendingFiles() {
@@ -300,6 +369,12 @@ async function savePhotoEdits() {
   closePhotoModal()
 }
 
+async function setCoverPhoto() {
+  if (!editingPhoto.value) return
+  await projectStore.setProjectCover(projectId.value, editingPhoto.value.id)
+  closePhotoModal()
+}
+
 async function deleteEditingPhoto() {
   if (!editingPhoto.value) return
   const ok = window.confirm('この写真を削除しますか？')
@@ -320,13 +395,35 @@ function triggerUploaderFocus() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString('ja-JP')
+function onDragStart(groupKey: GroupKey, photoId: string) {
+  draggingPhotoId.value = photoId
+  draggingGroupKey.value = groupKey
 }
 
-function formatFileSize(size: number) {
-  if (size < 1024 * 1024) return `${Math.round(size / 1024)}KB`
-  return `${(size / (1024 * 1024)).toFixed(1)}MB`
+async function onDrop(groupKey: GroupKey, targetPhotoId: string) {
+  if (!draggingPhotoId.value || draggingGroupKey.value !== groupKey || draggingPhotoId.value === targetPhotoId) return
+
+  const section = groupedPhotos.value.find((entry) => entry.key === groupKey)
+  if (!section) return
+
+  const reordered = [...section.photos]
+  const from = reordered.findIndex((entry) => entry.id === draggingPhotoId.value)
+  const to = reordered.findIndex((entry) => entry.id === targetPhotoId)
+  if (from === -1 || to === -1) return
+
+  const [moved] = reordered.splice(from, 1)
+  reordered.splice(to, 0, moved)
+
+  const flatIds = groupedPhotos.value.flatMap((entry) =>
+    entry.key === groupKey ? reordered.map((photo) => photo.id) : entry.photos.map((photo) => photo.id)
+  )
+  await projectStore.reorderPhotos(projectId.value, flatIds)
+  draggingPhotoId.value = null
+  draggingGroupKey.value = null
+}
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString('ja-JP')
 }
 </script>
 
@@ -347,7 +444,9 @@ function formatFileSize(size: number) {
 .photo-actions,
 .modal-head,
 .modal-section--row,
-.summary-actions {
+.summary-actions,
+.group-head,
+.hero-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -380,8 +479,7 @@ function formatFileSize(size: number) {
 .section-copy,
 .photo-date,
 .timeline-empty,
-.pending-size,
-.helper-copy {
+.group-count {
   color: var(--text-sub);
 }
 
@@ -389,7 +487,8 @@ function formatFileSize(size: number) {
 .secondary-btn,
 .sort-btn,
 .edit-btn,
-.close-btn {
+.close-btn,
+.size-btn {
   height: 40px;
   border-radius: 12px;
   border: 1px solid var(--border);
@@ -429,10 +528,6 @@ function formatFileSize(size: number) {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.summary-card--wide {
-  grid-column: span 1;
 }
 
 .summary-label,
@@ -498,10 +593,6 @@ function formatFileSize(size: number) {
   gap: 16px;
 }
 
-.section-head--tight {
-  align-items: flex-end;
-}
-
 .section-title {
   font-size: 18px;
 }
@@ -558,17 +649,27 @@ function formatFileSize(size: number) {
   background: var(--bg-surface);
 }
 
-.pending-head {
-  align-items: flex-start;
-}
-
 .pending-actions {
   display: flex;
   gap: 8px;
 }
 
-.pending-count {
-  font-weight: 800;
+.pending-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pending-card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pending-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
 }
 
 .upload-btn,
@@ -592,22 +693,68 @@ function formatFileSize(size: number) {
   cursor: pointer;
 }
 
-.pending-grid,
-.photo-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+.size-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
 }
 
-.pending-card,
+.size-btn.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.group-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.group-head {
+  margin-bottom: 8px;
+}
+
+.group-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.photo-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.photo-grid--large {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.photo-grid--medium {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.photo-grid--small {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .photo-card {
   border-radius: 16px;
   overflow: hidden;
   background: var(--bg-surface);
   border: 1px solid var(--border-faint);
+  cursor: pointer;
 }
 
-.pending-image,
+.photo-card--small .photo-meta-row {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.photo-thumb-wrap {
+  position: relative;
+}
+
 .photo-image {
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -615,59 +762,40 @@ function formatFileSize(size: number) {
   display: block;
 }
 
-.pending-meta,
-.photo-body {
-  padding: 10px;
-}
-
-.pending-meta {
-  display: grid;
-  gap: 4px;
-}
-
-.pending-name {
-  font-size: 12px;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.photo-card {
-  cursor: pointer;
-}
-
-.photo-thumb-wrap {
-  position: relative;
-}
-
 .photo-overlay {
   position: absolute;
-  inset: 10px 10px auto 10px;
+  inset: 8px 8px auto 8px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 
 .photo-status,
-.photo-order,
+.cover-badge,
 .photo-tag {
   width: fit-content;
-  padding: 5px 9px;
+  padding: 5px 8px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
 }
 
-.photo-status,
-.photo-order {
+.photo-status {
   background: rgba(15, 23, 32, 0.72);
   color: #fff;
 }
 
 .photo-status.public {
   background: rgba(84, 176, 125, 0.92);
+}
+
+.cover-badge {
+  background: rgba(255, 122, 26, 0.92);
+  color: #fff;
+}
+
+.photo-body {
+  padding: 8px;
 }
 
 .photo-meta-row {
@@ -682,7 +810,7 @@ function formatFileSize(size: number) {
 .photo-caption {
   margin-top: 8px;
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: var(--text-sub);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -691,12 +819,12 @@ function formatFileSize(size: number) {
 }
 
 .photo-actions {
-  margin-top: 10px;
+  margin-top: 8px;
   justify-content: flex-start;
 }
 
 .sort-btn {
-  width: 40px;
+  width: 36px;
   padding: 0;
 }
 
@@ -767,8 +895,16 @@ function formatFileSize(size: number) {
 }
 
 @media (min-width: 900px) {
-  .photo-grid {
+  .photo-grid--large {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .photo-grid--medium {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .photo-grid--small {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 }
 
@@ -782,6 +918,10 @@ function formatFileSize(size: number) {
   .pending-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .pending-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 </style>

@@ -51,17 +51,18 @@ import ProjectCard from '../components/ProjectCard.vue'
 import { projectStore } from '../store/projects'
 import type { BuildogProject } from '../types'
 
-type CardSize = 'small' | 'medium'
+type CardSize = 'small' | 'medium' | 'large'
 
 const STORAGE_KEY = 'buildog_project_card_size'
 const sizeOptions: { value: CardSize; label: string }[] = [
   { value: 'small', label: '小' },
   { value: 'medium', label: '中' },
+  { value: 'large', label: '大' },
 ]
 
 const router = useRouter()
 const projects = computed(() => projectStore.projects)
-const defaultSize: CardSize = window.innerWidth <= 768 ? 'small' : 'medium'
+const defaultSize: CardSize = window.innerWidth <= 768 ? 'medium' : 'large'
 const cardSize = ref<CardSize>((localStorage.getItem(STORAGE_KEY) as CardSize | null) ?? defaultSize)
 
 function setCardSize(size: CardSize) {
@@ -81,7 +82,7 @@ function openProject(project: BuildogProject) {
 }
 
 .hero {
-  padding: 18px 16px 8px;
+  padding: 16px 16px 8px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -98,7 +99,7 @@ function openProject(project: BuildogProject) {
 }
 
 .hero-title {
-  font-size: clamp(20px, 4vw, 28px);
+  font-size: clamp(20px, 4vw, 26px);
   line-height: 1.2;
 }
 
@@ -141,15 +142,19 @@ function openProject(project: BuildogProject) {
 
 .project-grid {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
-.project-grid--small {
+.project-grid--large {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .project-grid--medium {
-  grid-template-columns: repeat(1, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.project-grid--small {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .state-card,
@@ -191,12 +196,16 @@ function openProject(project: BuildogProject) {
 }
 
 @media (min-width: 900px) {
-  .project-grid--small {
+  .project-grid--large {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .project-grid--medium {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .project-grid--small {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 }
 
