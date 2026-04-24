@@ -1,152 +1,108 @@
 <template>
   <div v-if="!authState.ready" class="init-loading" />
   <template v-else>
-    <GlobalToolbar
-      v-if="showToolbar"
-      @open-account="showAccountModal = true"
-    />
+    <GlobalToolbar v-if="showToolbar" @open-account="showAccountModal = true" />
     <div class="app-content" :class="{ 'with-toolbar': showToolbar }">
       <RouterView />
     </div>
-    <AccountModal
-      v-if="showAccountModal"
-      @close="showAccountModal = false"
-    />
+    <AccountModal v-if="showAccountModal" @close="showAccountModal = false" />
   </template>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
-import { authState } from './lib/auth'
-import GlobalToolbar from './components/GlobalToolbar.vue'
 import AccountModal from './components/AccountModal.vue'
+import GlobalToolbar from './components/GlobalToolbar.vue'
+import { authState } from './lib/auth'
 import { useTheme } from './composables/useTheme'
 
-useTheme() // initialize theme from localStorage on mount
+useTheme()
 
 const route = useRoute()
 const showAccountModal = ref(false)
-const showToolbar = computed(() =>
-  route.name !== 'login' &&
-  route.name !== 'about' &&
-  !!authState.user
-)
+const showToolbar = computed(() => !!authState.user && route.name !== 'public-project' && route.name !== 'login')
 
-// ログアウト時にモーダルを自動で閉じる
 watch(() => authState.user, (user) => {
   if (!user) showAccountModal.value = false
 })
 </script>
 
 <style>
-/* ── CSS Custom Properties ── */
 :root {
-  /* Backgrounds */
-  --bg:         #0a0907;
-  --bg-surface: #111009;
-  --bg-card:    #18160f;
-  --bg-hover:   #1f1c12;
-  --bg-input:   #141209;
-  --bg-subtle:  rgba(255, 255, 255, 0.04);
+  --bg: #0f1720;
+  --bg-surface: #16202b;
+  --bg-card: #1c2733;
+  --bg-hover: #223140;
+  --bg-input: #111b25;
+  --bg-subtle: rgba(255, 255, 255, 0.05);
 
-  /* Borders */
-  --border:        rgba(255, 255, 255, 0.09);
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-faint:  rgba(255, 255, 255, 0.04);
-  --border-accent: rgba(201, 148, 42, 0.25);
+  --border: rgba(255, 255, 255, 0.12);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-faint: rgba(255, 255, 255, 0.05);
+  --border-accent: rgba(255, 122, 26, 0.28);
 
-  /* Text */
-  --text:             #f0ead8;
-  --text-sub:         rgba(240, 234, 216, 0.65);
-  --text-muted:       rgba(240, 234, 216, 0.45);
-  --text-faint:       rgba(240, 234, 216, 0.30);
-  --text-placeholder: rgba(240, 234, 216, 0.22);
+  --text: #eef4f8;
+  --text-sub: rgba(238, 244, 248, 0.74);
+  --text-muted: rgba(238, 244, 248, 0.5);
+  --text-faint: rgba(238, 244, 248, 0.34);
+  --text-placeholder: rgba(238, 244, 248, 0.24);
 
-  /* Brand accent */
-  --accent:        #c9942a;
-  --accent-hover:  #e0a830;
-  --accent-bg:     rgba(201, 148, 42, 0.10);
-  --accent-bg-dim: rgba(201, 148, 42, 0.06);
+  --accent: #ff7a1a;
+  --accent-hover: #ff8c39;
+  --accent-bg: rgba(255, 122, 26, 0.12);
 
-  /* Toolbar */
-  --toolbar-bg:     rgba(10, 9, 7, 0.92);
-  --toolbar-border: rgba(201, 148, 42, 0.12);
+  --toolbar-bg: rgba(15, 23, 32, 0.88);
+  --toolbar-border: rgba(255, 122, 26, 0.12);
 
-  /* Functional */
-  --digital:    #6b84e8;
-  --digital-bg: rgba(107, 132, 232, 0.14);
-  --success:    #5aaa6a;
-  --success-bg: rgba(90, 170, 106, 0.12);
-  --danger:     #e07870;
-  --danger-bg:  rgba(224, 120, 112, 0.12);
-  --warning:    #d4aa38;
-  --warning-bg: rgba(212, 170, 56, 0.12);
-  --blue:       #6a80c8;
-  --pink:       #d07898;
+  --success: #54b07d;
+  --success-bg: rgba(84, 176, 125, 0.12);
+  --danger: #df7268;
+  --danger-bg: rgba(223, 114, 104, 0.14);
+  --overlay: rgba(6, 12, 18, 0.72);
 
-  /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.45);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.55);
-  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.65);
-
-  /* Overlay */
-  --overlay: rgba(0, 0, 0, 0.65);
-
-  /* Score card */
-  --score-bg:     linear-gradient(135deg, rgba(201,148,42,0.12), rgba(201,148,42,0.06));
-  --score-border: rgba(201, 148, 42, 0.2);
+  --shadow-sm: 0 6px 20px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 18px 40px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 30px 90px rgba(0, 0, 0, 0.35);
 }
 
 [data-theme="light"] {
-  --bg:         #faf8f4;
-  --bg-surface: #f5f2ec;
-  --bg-card:    #ffffff;
-  --bg-hover:   #fdf8f0;
-  --bg-input:   #faf8f4;
-  --bg-subtle:  rgba(139, 105, 20, 0.04);
+  --bg: #f3f5f6;
+  --bg-surface: #e8edf1;
+  --bg-card: #ffffff;
+  --bg-hover: #f6f8fa;
+  --bg-input: #ffffff;
+  --bg-subtle: rgba(17, 27, 37, 0.04);
 
-  --border:        #e0dbd0;
-  --border-subtle: #f0ece4;
-  --border-faint:  #f5f2ec;
-  --border-accent: rgba(139, 105, 20, 0.3);
+  --border: rgba(17, 27, 37, 0.12);
+  --border-subtle: rgba(17, 27, 37, 0.08);
+  --border-faint: rgba(17, 27, 37, 0.05);
+  --border-accent: rgba(255, 122, 26, 0.25);
 
-  --text:             #2c2315;
-  --text-sub:         #6b5c40;
-  --text-muted:       #a09070;
-  --text-faint:       #b0a090;
-  --text-placeholder: #c0b8a8;
+  --text: #16202b;
+  --text-sub: rgba(22, 32, 43, 0.72);
+  --text-muted: rgba(22, 32, 43, 0.5);
+  --text-faint: rgba(22, 32, 43, 0.34);
+  --text-placeholder: rgba(22, 32, 43, 0.24);
 
-  --accent:        #8b6914;
-  --accent-hover:  #70530f;
-  --accent-bg:     rgba(139, 105, 20, 0.08);
-  --accent-bg-dim: rgba(139, 105, 20, 0.04);
+  --accent: #d45d00;
+  --accent-hover: #b94f00;
+  --accent-bg: rgba(212, 93, 0, 0.08);
 
-  --toolbar-bg:     rgba(250, 248, 244, 0.95);
-  --toolbar-border: rgba(139, 105, 20, 0.12);
+  --toolbar-bg: rgba(243, 245, 246, 0.92);
+  --toolbar-border: rgba(212, 93, 0, 0.1);
 
-  --digital:    #4f65d2;
-  --digital-bg: #eef1fb;
-  --success:    #3a7a3a;
-  --success-bg: #f0f9f0;
-  --danger:     #c0786a;
-  --danger-bg:  #fff8f8;
-  --warning:    #c8a830;
-  --warning-bg: #fdf3dc;
-  --blue:       #4a6da8;
-  --pink:       #c86a80;
+  --success: #2f8f61;
+  --success-bg: rgba(47, 143, 97, 0.12);
+  --danger: #c65b55;
+  --danger-bg: rgba(198, 91, 85, 0.12);
+  --overlay: rgba(12, 18, 24, 0.48);
 
-  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.2);
-
-  --overlay: rgba(30, 20, 10, 0.5);
-
-  --score-bg:     linear-gradient(135deg, #fdf3dc, #fff8ee);
-  --score-border: rgba(139, 105, 20, 0.2);
+  --shadow-sm: 0 8px 18px rgba(15, 23, 32, 0.08);
+  --shadow-md: 0 18px 34px rgba(15, 23, 32, 0.12);
+  --shadow-lg: 0 28px 70px rgba(15, 23, 32, 0.18);
 }
 
-/* ── Base ── */
 *,
 *::before,
 *::after {
@@ -155,28 +111,31 @@ watch(() => authState.user, (user) => {
   box-sizing: border-box;
 }
 
+html,
+body,
+#app {
+  min-height: 100vh;
+}
+
 body {
   font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
-  transition: background 0.2s, color 0.2s;
 }
 
-#app {
-  min-height: 100vh;
+button,
+input,
+textarea {
+  font: inherit;
 }
 
-.init-loading {
-  min-height: 100vh;
-  background: var(--bg);
-}
-
+.init-loading,
 .app-content {
   min-height: 100vh;
 }
 
 .app-content.with-toolbar {
-  padding-top: 54px;
+  padding-top: 58px;
 }
 </style>

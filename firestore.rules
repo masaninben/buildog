@@ -1,37 +1,28 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ユーザードキュメント
-    // 読み取り：本人 or 認証済みユーザー or ユーザー名解決のため公開（username・displayName目的）
     match /users/{uid} {
-      allow read: if true;  // username によるUID解決（公開棚URL対応）
-      allow write: if request.auth != null && request.auth.uid == uid;
-
-      // 棚アイテム（書き込みはユーザー自身のみ、所有中アイテムは誰でも読み取り可）
-      match /items/{itemId} {
-        allow read: if request.auth != null && request.auth.uid == uid
-                    || resource.data.status == 'owned';
-        allow write: if request.auth != null && request.auth.uid == uid;
-      }
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // 管理者はすべてのユーザードキュメントを読み書き可（ロール管理用）
-    match /users/{uid} {
-      allow read, write: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
+    match /projects/{projectId} {
+      allow read: if resource.data.isPublic == true
+        || (request.auth != null && resource.data.ownerId == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
 
-    // 商品DB — 認証済みユーザーなら誰でも読み書き可
-    // （ユーザーが追加した商品を全体で共有するため）
-    match /products/{productId} {
-      allow read:  if request.auth != null;
-      allow write: if request.auth != null;
-
-      // 商品画像サブコレクション
-      match /images/{imageId} {
-        allow read:  if request.auth != null;
-        allow write: if request.auth != null;
+      match /photos/{photoId} {
+        allow read: if (
+          get(/databases/$(database)/documents/projects/$(projectId)).data.isPublic == true
+          && resource.data.isPublic == true
+        ) || (
+          request.auth != null
+          && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid
+        );
+        allow create, update, delete: if request.auth != null
+          && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid;
       }
     }
   }

@@ -1,22 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#0a0907"/>
-  <defs>
-    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"   stop-color="#f8f0c0"/>
-      <stop offset="22%"  stop-color="#c9941a"/>
-      <stop offset="48%"  stop-color="#f5d060"/>
-      <stop offset="74%"  stop-color="#a87010"/>
-      <stop offset="100%" stop-color="#f0e0a0"/>
-    </linearGradient>
-  </defs>
-  <text
-    x="256" y="256"
-    text-anchor="middle"
-    dominant-baseline="middle"
-    font-family="'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif"
-    font-size="108"
-    font-weight="800"
-    letter-spacing="6"
-    fill="url(#gold)"
-  >Penstok</text>
+  <rect width="512" height="512" rx="104" fill="#0f1720"/>
+  <rect x="72" y="96" width="368" height="320" rx="32" fill="#16202b" stroke="#ff7a1a" stroke-width="20"/>
+  <path d="M120 352h272" stroke="#ff7a1a" stroke-width="20" stroke-linecap="round"/>
+  <path d="M152 320l64-88 56 56 48-72 40 48" fill="none" stroke="#eef4f8" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="188" cy="176" r="22" fill="#ff7a1a"/>
 </svg>

@@ -1,356 +1,73 @@
 <template>
   <div class="photo-upload">
+    <input
+      ref="fileInput"
+      type="file"
+      accept="image/*"
+      multiple
+      class="hidden-input"
+      @change="onFileSelect"
+    />
 
-    <!-- プレビューエリア -->
-    <div v-if="previewUrl" class="preview-wrap">
-      <div class="preview-img-wrap" :class="{ transparent: bgRemoved }">
-        <img :src="previewUrl" class="preview-img" />
-      </div>
+    <button class="add-photo-btn" type="button" @click="openPicker">
+      ＋ 写真を追加
+    </button>
 
-      <div v-if="processing" class="progress-wrap">
-        <div class="progress-bar">
-          <div class="progress-fill" :style="{ width: progressPct + '%' }" />
-        </div>
-        <p class="progress-label">{{ progressLabel }}</p>
-      </div>
-
-      <div v-else class="preview-actions">
-        <button
-          v-if="!bgRemoved"
-          class="bg-remove-btn"
-          @click="doRemoveBackground"
-        >✂️ 背景を除去</button>
-        <button
-          v-if="bgRemoved"
-          class="bg-remove-btn secondary"
-          @click="resetToOriginal"
-        >↩ 元に戻す</button>
-        <button
-          class="use-btn"
-          :disabled="uploading"
-          @click="confirmUpload"
-        >
-          <span v-if="uploading">アップロード中…</span>
-          <span v-else>この画像を使う ✓</span>
-        </button>
-        <button class="retake-btn" @click="reset">撮り直す</button>
-      </div>
-    </div>
-
-    <!-- 撮影 / 選択ボタン -->
-    <div v-else class="select-wrap">
-      <label class="camera-btn">
-        <input
-          ref="fileInput"
-          type="file"
-          accept="image/*"
-          capture="environment"
-          class="hidden-input"
-          @change="onFileSelect"
-        />
-        📷 撮影する
-      </label>
-      <label class="gallery-btn">
-        <input
-          type="file"
-          accept="image/*"
-          class="hidden-input"
-          @change="onFileSelect"
-        />
-        🖼 ライブラリから選ぶ
-      </label>
-    </div>
-
+    <p class="helper-text">複数枚をまとめて選択できます。撮影済み写真の整理に向いています。</p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-const CLOUD_NAME    = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string
-const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string
 
-const props = defineProps<{
-  uploadPath: string   // Cloudinary folder 内のパス識別子
+defineProps<{
+  uploadPath: string
 }>()
 
 const emit = defineEmits<{
-  done: [url: string]
-  cancel: []
+  select: [files: File[]]
 }>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
-const previewUrl = ref('')
-const originalBlob = ref<Blob | null>(null)
-const processedBlob = ref<Blob | null>(null)
-const bgRemoved = ref(false)
-const processing = ref(false)
-const uploading = ref(false)
-const progressPct = ref(0)
-const progressLabel = ref('')
 
-function onFileSelect(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  originalBlob.value = file
-  processedBlob.value = null
-  bgRemoved.value = false
-  previewUrl.value = URL.createObjectURL(file)
+function openPicker() {
+  fileInput.value?.click()
 }
 
-async function doRemoveBackground() {
-  if (!originalBlob.value) return
-  processing.value = true
-  progressPct.value = 0
-  progressLabel.value = 'モデルを準備中…'
-
-  try {
-    const { removeBackground } = await import('@imgly/background-removal')
-    const resultBlob = await removeBackground(originalBlob.value, {
-      debug: false,
-      progress: (key: string, current: number, total: number) => {
-        progressPct.value = total > 0 ? Math.round((current / total) * 100) : 0
-        if (key.includes('fetch') || key.includes('download')) {
-          progressLabel.value = `モデルをダウンロード中… ${progressPct.value}%`
-        } else {
-          progressLabel.value = `背景を解析中… ${progressPct.value}%`
-        }
-      },
-      output: { format: 'image/png', quality: 0.9 },
-    })
-    processedBlob.value = resultBlob
-    previewUrl.value = URL.createObjectURL(resultBlob)
-    bgRemoved.value = true
-  } catch (e) {
-    console.error('background removal failed:', e)
-    alert('背景除去に失敗しました。そのまま使用できます。')
-  } finally {
-    processing.value = false
-  }
-}
-
-function resetToOriginal() {
-  if (!originalBlob.value) return
-  processedBlob.value = null
-  previewUrl.value = URL.createObjectURL(originalBlob.value)
-  bgRemoved.value = false
-}
-
-// 白背景Canvasに合成してJPEG Blobを返す
-function compositeOnWhite(blob: Blob, withShadow: boolean): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    const url = URL.createObjectURL(blob)
-    img.onload = () => {
-      const W = 600, H = 800  // 3:4 — カードと同比率
-      const pad = 32
-      const canvas = document.createElement('canvas')
-      canvas.width = W
-      canvas.height = H
-      const ctx = canvas.getContext('2d')!
-
-      // 白背景
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(0, 0, W, H)
-
-      // フィット計算
-      const scale = Math.min((W - pad * 2) / img.width, (H - pad * 2) / img.height)
-      const w = img.width * scale
-      const h = img.height * scale
-      const x = (W - w) / 2
-      const y = (H - h) / 2
-
-      // 白地に白い被写体が溶け込まないよう薄いシャドウを付与
-      if (withShadow) {
-        ctx.shadowColor = 'rgba(0,0,0,0.13)'
-        ctx.shadowBlur = 16
-        ctx.shadowOffsetY = 3
-      } else {
-        // 背景除去なしでも四辺に薄いフレームを確保
-        ctx.shadowColor = 'rgba(0,0,0,0.06)'
-        ctx.shadowBlur = 6
-      }
-      ctx.drawImage(img, x, y, w, h)
-      ctx.shadowColor = 'transparent'
-
-      URL.revokeObjectURL(url)
-      canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', 0.93)
-    }
-    img.onerror = () => reject(new Error('image load failed'))
-    img.src = url
-  })
-}
-
-async function confirmUpload() {
-  const blob = processedBlob.value ?? originalBlob.value
-  if (!blob) return
-  uploading.value = true
-  try {
-    const finalBlob = await compositeOnWhite(blob, bgRemoved.value)
-
-    const form = new FormData()
-    form.append('file', finalBlob, 'image.jpg')
-    form.append('upload_preset', UPLOAD_PRESET)
-    form.append('folder', `penstok/${props.uploadPath}`)
-
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-      { method: 'POST', body: form }
-    )
-    const data = await res.json()
-    if (!res.ok) {
-      const msg = data?.error?.message ?? `HTTP ${res.status}`
-      throw new Error(msg)
-    }
-    emit('done', data.secure_url as string)
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    console.error('upload failed:', msg)
-    alert(`アップロードに失敗しました。\n${msg}`)
-  } finally {
-    uploading.value = false
-  }
-}
-
-function reset() {
-  previewUrl.value = ''
-  originalBlob.value = null
-  processedBlob.value = null
-  bgRemoved.value = false
-  progressPct.value = 0
+function onFileSelect(event: Event) {
+  const files = Array.from((event.target as HTMLInputElement).files ?? [])
+  if (files.length === 0) return
+  emit('select', files)
+  ;(event.target as HTMLInputElement).value = ''
 }
 </script>
 
 <style scoped>
 .photo-upload {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  gap: 10px;
 }
 
-.hidden-input { display: none; }
-
-.select-wrap { display: flex; gap: 8px; }
-
-.camera-btn,
-.gallery-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 44px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s;
+.hidden-input {
+  display: none;
 }
 
-.camera-btn {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-}
-.camera-btn:hover { background: var(--accent-hover); }
-
-.gallery-btn {
-  background: var(--bg-subtle);
-  color: var(--accent);
-  border: 1.5px solid var(--accent);
-}
-.gallery-btn:hover { background: var(--accent-bg); }
-
-.preview-wrap { display: flex; flex-direction: column; gap: 12px; }
-
-.preview-img-wrap {
+.add-photo-btn {
   width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--bg-surface);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.preview-img-wrap.transparent {
-  background: repeating-conic-gradient(rgba(255,255,255,0.15) 0% 25%, rgba(255,255,255,0.05) 0% 50%) 0 0 / 16px 16px;
-}
-
-.preview-img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
-.progress-wrap { display: flex; flex-direction: column; gap: 6px; }
-
-.progress-bar {
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-.progress-label {
-  font-size: 11px;
-  color: var(--text-faint);
-  text-align: center;
-}
-
-.preview-actions { display: flex; flex-direction: column; gap: 8px; }
-
-.bg-remove-btn {
-  height: 40px;
-  border: 1.5px solid var(--digital);
-  border-radius: 8px;
-  background: var(--digital-bg);
-  color: var(--digital);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s;
-}
-.bg-remove-btn:hover { opacity: 0.85; }
-.bg-remove-btn.secondary {
-  border-color: var(--border);
-  color: var(--text-muted);
-  background: var(--bg-subtle);
-}
-.bg-remove-btn.secondary:hover { background: var(--bg-surface); }
-
-.use-btn {
-  height: 44px;
+  height: 54px;
+  border: none;
+  border-radius: 16px;
   background: var(--accent);
   color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 800;
   cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s;
+  box-shadow: var(--shadow-sm);
 }
-.use-btn:hover:not(:disabled) { background: var(--accent-hover); }
-.use-btn:disabled { opacity: 0.5; cursor: default; }
 
-.retake-btn {
-  height: 36px;
-  background: none;
-  border: none;
-  color: var(--text-faint);
+.helper-text {
   font-size: 12px;
-  cursor: pointer;
-  font-family: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  color: var(--text-sub);
+  line-height: 1.6;
 }
 </style>
