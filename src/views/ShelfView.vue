@@ -21,6 +21,13 @@
       </div>
 
       <div class="toolbar-right">
+        <button class="share-btn" @click="shareShelf" title="棚を共有">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="share-icon">
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
+          <span class="share-label">共有</span>
+        </button>
         <select class="sort-select" v-model="sortOrder">
           <option value="newest">所有→アーカイブ順</option>
           <option value="oldest">古い順</option>
@@ -78,6 +85,7 @@ import ShelfCard from '../components/ShelfCard.vue'
 import { store } from '../store/shelf'
 import { productStore } from '../store/products'
 import { userProfileStore } from '../store/userProfile'
+import { authState } from '../lib/auth'
 import { CATEGORY_LABELS, CATEGORY_EMOJI, type ShelfItem, type ItemCategory } from '../types'
 
 const router = useRouter()
@@ -122,7 +130,7 @@ function countByCategory(cat: ItemCategory) {
   return allItems.value.filter(i => i.category === cat).length
 }
 
-const CATEGORY_ORDER: ItemCategory[] = ['book', 'music', 'video', 'game', 'electronics', 'camera', 'other']
+const CATEGORY_ORDER: ItemCategory[] = ['book', 'music', 'video', 'game', 'electronics', 'camera', 'shoes', 'clothing', 'bag', 'watch', 'instrument', 'hobby', 'sports', 'furniture', 'vehicle', 'other']
 
 const displayItems = computed(() => {
   let items = activeCategory.value
@@ -152,6 +160,19 @@ const displayItems = computed(() => {
 
 function handleCardClick(item: ShelfItem) {
   router.push({ name: 'item-detail', params: { id: item.id } })
+}
+
+async function shareShelf() {
+  const uid = authState.user?.uid
+  if (!uid) return
+  const url = `${window.location.origin}/u/${uid}`
+  const text = `私の棚（${allItems.value.filter(i => i.status === 'owned').length}件）をPenstokで公開中`
+  if (navigator.share) {
+    await navigator.share({ title: 'My Penstok Shelf', text, url }).catch(() => {})
+  } else {
+    await navigator.clipboard.writeText(url)
+    alert('共有URLをコピーしました')
+  }
 }
 
 // userProfileStore を参照して未使用警告を回避
@@ -220,6 +241,27 @@ void userProfileStore
   gap: 10px;
   flex-shrink: 0;
 }
+
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-sub);
+  background: var(--bg-subtle);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.share-btn:hover { border-color: var(--accent); color: var(--accent); }
+.share-icon { width: 13px; height: 13px; flex-shrink: 0; }
+.share-label { white-space: nowrap; }
 
 .sort-select {
   height: 28px;

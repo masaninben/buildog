@@ -86,6 +86,61 @@
           </div>
         </div>
 
+        <!-- URLから取得 -->
+        <div class="or-divider"><span>またはURLから情報を取得</span></div>
+
+        <div class="url-section">
+          <p class="url-guide">商品の詳細ページURLを貼り付けると、タイトルと画像を自動で取得します。</p>
+          <p class="url-examples">Amazon・メルカリ・ヤフオク・ZOZO・楽天・価格.com など</p>
+          <div class="url-bar">
+            <div class="url-input-wrap">
+              <input
+                v-model="urlInput"
+                type="url"
+                class="url-input"
+                placeholder="https://..."
+                @keydown.enter="fetchFromUrl"
+              />
+              <button
+                v-if="urlInput.length > 0"
+                class="url-clear-btn"
+                @click="urlInput = ''; urlResult = null; urlError = ''; urlAdded = false"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <button class="url-fetch-btn" :disabled="!urlInput.trim() || urlLoading" @click="fetchFromUrl">
+              {{ urlLoading ? '取得中…' : '取得' }}
+            </button>
+          </div>
+          <p v-if="urlError" class="url-error">{{ urlError }}</p>
+
+          <!-- 取得結果プレビュー -->
+          <div v-if="urlResult" class="url-result-card">
+            <div class="url-result-cover">
+              <img v-if="urlResult.imageUrl" :src="urlResult.imageUrl" class="url-result-img" />
+              <span v-else class="url-result-emoji">📦</span>
+            </div>
+            <div class="url-result-info">
+              <input v-model="urlResult.name" class="url-edit-input" placeholder="商品名" />
+              <input v-model="urlResult.creator" class="url-edit-input url-edit-sub" placeholder="著者 / メーカー（任意）" />
+              <select v-model="urlResult.category" class="url-edit-select">
+                <option v-for="[val, label] in categoryOptions" :key="val" :value="val">
+                  {{ CATEGORY_EMOJI[val] }} {{ label }}
+                </option>
+              </select>
+            </div>
+            <button
+              class="url-add-btn"
+              :class="{ added: urlAdded }"
+              :disabled="urlAdded || saving || !urlResult.name.trim()"
+              @click="addFromUrl"
+            >{{ urlAdded ? '✓' : '追加' }}</button>
+          </div>
+        </div>
+
         <div class="or-divider"><span>またはキーワードで検索</span></div>
 
         <div class="search-card">
@@ -398,6 +453,15 @@ const SEARCH_PLACEHOLDER: Record<ItemCategory, string> = {
   game:        'ゲームタイトル・メーカーで検索',
   electronics: '商品名・メーカー名で検索',
   camera:      'カメラ・レンズ名で検索',
+  shoes:       'ブランド・商品名で検索',
+  clothing:    'ブランド・商品名で検索',
+  bag:         'ブランド・商品名で検索',
+  watch:       'ブランド・モデル名で検索',
+  instrument:  '楽器名・メーカーで検索',
+  hobby:       '商品名・シリーズ名で検索',
+  sports:      'ブランド・商品名で検索',
+  furniture:   '商品名・メーカーで検索',
+  vehicle:     'メーカー・車種名で検索',
   other:       'キーワードで検索',
 }
 const searchPlaceholder = computed(() => SEARCH_PLACEHOLDER[searchCategory.value])
@@ -467,6 +531,51 @@ const CATEGORY_API: Record<ItemCategory, ApiConfig> = {
     getExternalSource: i => `rakutenIchiba:${i.itemCode as string}`,
   },
   camera: {
+    endpoint: 'IchibaItem/Search/20170706', type: 'ichiba',
+    getCreator: i => (i.shopName as string) ?? '',
+    getExternalSource: i => `rakutenIchiba:${i.itemCode as string}`,
+  },
+  shoes: {
+    endpoint: 'IchibaItem/Search/20170706', type: 'ichiba',
+    getCreator: i => (i.shopName as string) ?? '',
+    getExternalSource: i => `rakutenIchiba:${i.itemCode as string}`,
+  },
+  clothing: {
+    endpoint: 'IchibaItem/Search/20170706', type: 'ichiba',
+    getCreator: i => (i.shopName as string) ?? '',
+    getExternalSource: i => `rakutenIchiba:${i.itemCode as string}`,
+  },
+  bag: {
+    endpoint: 'IchibaItem/Search/20170706', type: 'ichiba',
+    getCreator: i => (i.shopName as string) ?? '',
+    getExternalSource: i => `rakutenIchiba:${i.itemCode as string}`,
+  },
+  watch: {
+    endpoint: 'IchibaItem/Search/20170706', type: 'ichiba',
+    getCreator: i => (i.shopName as string) ?? '',
+    getExternalSource: i => `rakutenIchiba:${i.itemCode as string}`,
+  },
+  instrument: {
+    endpoint: 'IchibaItem/Search/20170706', type: 'ichiba',
+    getCreator: i => (i.shopName as string) ?? '',
+    getExternalSource: i => `rakutenIchiba:${i.itemCode as string}`,
+  },
+  hobby: {
+    endpoint: 'IchibaItem/Search/20170706', type: 'ichiba',
+    getCreator: i => (i.shopName as string) ?? '',
+    getExternalSource: i => `rakutenIchiba:${i.itemCode as string}`,
+  },
+  sports: {
+    endpoint: 'IchibaItem/Search/20170706', type: 'ichiba',
+    getCreator: i => (i.shopName as string) ?? '',
+    getExternalSource: i => `rakutenIchiba:${i.itemCode as string}`,
+  },
+  furniture: {
+    endpoint: 'IchibaItem/Search/20170706', type: 'ichiba',
+    getCreator: i => (i.shopName as string) ?? '',
+    getExternalSource: i => `rakutenIchiba:${i.itemCode as string}`,
+  },
+  vehicle: {
     endpoint: 'IchibaItem/Search/20170706', type: 'ichiba',
     getCreator: i => (i.shopName as string) ?? '',
     getExternalSource: i => `rakutenIchiba:${i.itemCode as string}`,
@@ -1128,6 +1237,64 @@ async function addBook(book: BookResult) {
   }
 }
 
+// ---- URLから取得 ----
+
+const urlInput   = ref('')
+const urlLoading = ref(false)
+const urlError   = ref('')
+const urlAdded   = ref(false)
+const urlResult  = ref<{ name: string; creator: string; imageUrl: string; category: ItemCategory } | null>(null)
+
+async function fetchFromUrl() {
+  const url = urlInput.value.trim()
+  if (!url) return
+  urlLoading.value = true
+  urlError.value = ''
+  urlResult.value = null
+  urlAdded.value = false
+  try {
+    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&charset=utf-8`
+    const res = await fetch(proxy, { signal: AbortSignal.timeout(12000) })
+    if (!res.ok) throw new Error('ページを取得できませんでした')
+    const { contents: html } = await res.json() as { contents: string }
+
+    const ogp = (prop: string) => {
+      const patterns = [
+        new RegExp(`<meta[^>]+property=["']og:${prop}["'][^>]+content=["']([^"']+)["']`, 'i'),
+        new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:${prop}["']`, 'i'),
+      ]
+      for (const re of patterns) { const m = html.match(re); if (m) return m[1].trim() }
+      return ''
+    }
+
+    const name = ogp('title') || ogp('site_name') || ''
+    if (!name) throw new Error('商品情報を取得できませんでした。商品の詳細ページURLか確認してください。')
+
+    urlResult.value = { name, creator: '', imageUrl: ogp('image'), category: 'other' as ItemCategory }
+  } catch (e) {
+    urlError.value = e instanceof Error ? e.message : '取得に失敗しました'
+  } finally {
+    urlLoading.value = false
+  }
+}
+
+async function addFromUrl() {
+  if (!urlResult.value?.name.trim()) return
+  saving.value = true
+  try {
+    await store.addItem({
+      name: urlResult.value.name.trim(),
+      creator: urlResult.value.creator.trim(),
+      imageUrl: urlResult.value.imageUrl,
+      category: urlResult.value.category,
+    })
+    urlAdded.value = true
+    addedCount.value++
+  } finally {
+    saving.value = false
+  }
+}
+
 async function addManual() {
   if (!manual.name.trim()) return
   saving.value = true
@@ -1211,10 +1378,10 @@ async function addManual() {
 
 .scan-result-cover {
   width: 38px; height: 52px; border-radius: 3px; flex-shrink: 0;
-  background: var(--bg-surface); overflow: hidden;
+  background: #ffffff; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
 }
-.scan-result-cover img { width:100%; height:100%; object-fit:cover; display:block; }
+.scan-result-cover img { width:100%; height:100%; object-fit:contain; display:block; }
 .scan-result-spinner {
   display: inline-block; width: 14px; height: 14px;
   border: 2px solid var(--border); border-top-color: var(--accent);
@@ -1263,6 +1430,163 @@ async function addManual() {
 .or-divider::before, .or-divider::after {
   content: ''; flex: 1; height: 1px; background: var(--border);
 }
+
+/* ---- URLから取得 ---- */
+.url-section {
+  background: var(--bg-card);
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-faint);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.url-guide {
+  font-size: 12px;
+  color: var(--text-sub);
+  line-height: 1.6;
+}
+.url-examples {
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 0.02em;
+}
+.url-bar {
+  display: flex;
+  gap: 8px;
+}
+.url-input-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.url-clear-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+}
+.url-clear-btn svg { width: 14px; height: 14px; }
+.url-clear-btn:hover { color: var(--text-sub); }
+.url-input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg-input);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.url-input:focus { border-color: var(--accent); }
+.url-input::placeholder { color: var(--text-placeholder); }
+.url-fetch-btn {
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.url-fetch-btn:disabled { opacity: 0.5; cursor: default; }
+.url-fetch-btn:hover:not(:disabled) { background: var(--accent-hover); }
+.url-error {
+  font-size: 11px;
+  color: var(--error, #e05252);
+  padding: 2px 0;
+}
+.url-result-card {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-faint);
+}
+.url-result-cover {
+  width: 52px;
+  height: 68px;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-faint);
+}
+.url-result-img { width: 100%; height: 100%; object-fit: contain; }
+.url-result-emoji { font-size: 22px; }
+.url-result-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.url-edit-input {
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg-input);
+  outline: none;
+  box-sizing: border-box;
+}
+.url-edit-input:focus { border-color: var(--accent); }
+.url-edit-sub { font-size: 11px; color: var(--text-sub); }
+.url-edit-select {
+  width: 100%;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--text-sub);
+  background: var(--bg-input);
+  outline: none;
+  cursor: pointer;
+}
+.url-add-btn {
+  flex-shrink: 0;
+  align-self: center;
+  min-width: 48px;
+  height: 34px;
+  padding: 0 12px;
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.url-add-btn:hover:not(:disabled) { background: var(--accent); color: #fff; }
+.url-add-btn.added { border-color: var(--success); color: var(--success); cursor: default; }
+.url-add-btn:disabled:not(.added) { opacity: 0.4; cursor: default; }
 
 .search-card {
   background: var(--bg-card); border-radius: 10px; padding: 14px 16px;
@@ -1429,9 +1753,9 @@ async function addManual() {
 
 .result-cover-wrap {
   flex-shrink: 0; width: 40px; height: 56px; border-radius: 3px; overflow: hidden;
-  background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-size: 20px;
+  background: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 20px;
 }
-.result-cover { width: 100%; height: 100%; object-fit: cover; display: block; }
+.result-cover { width: 100%; height: 100%; object-fit: contain; display: block; }
 
 .result-info { flex: 1; min-width: 0; }
 .result-title {

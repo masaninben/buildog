@@ -605,11 +605,11 @@ async function save() {
 .cover-section { display: flex; flex-direction: column; gap: 10px; }
 
 .cover-wrap {
-  width: 100%; aspect-ratio: 3 / 4; background: var(--bg-surface);
+  width: 100%; aspect-ratio: 3 / 4; background: #ffffff;
   border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;
   padding: 4px; box-sizing: border-box;
 }
-.cover-img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+.cover-img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .cover-empty { font-size: 12px; color: var(--text-placeholder); }
 .curated-label { font-size: 11px; color: var(--accent); font-weight: 600; text-align: center; }
 .img-source { font-size: 9px; color: var(--text-faint); text-align: right; letter-spacing: 0.03em; }

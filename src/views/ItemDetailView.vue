@@ -153,6 +153,24 @@
             <OwnershipMap :product-id="item.productId" />
           </div>
 
+          <!-- 公開棚スイッチ（所有中のみ） -->
+          <div v-if="item.status === 'owned'" class="public-card">
+            <div class="public-row">
+              <div class="public-label-wrap">
+                <span class="public-label">公開棚に含める</span>
+                <span class="public-hint">共有URLでこのアイテムを公開します</span>
+              </div>
+              <button
+                class="toggle-switch"
+                :class="{ on: pubVisible }"
+                @click="togglePublicVisibility"
+                :aria-label="pubVisible ? '公開中' : '非公開'"
+              >
+                <span class="toggle-thumb" />
+              </button>
+            </div>
+          </div>
+
           <!-- アクション -->
           <div class="action-card">
             <template v-if="item.status === 'owned'">
@@ -364,6 +382,14 @@ function onPriceInput(field: 'acquirePrice' | 'sellPrice', e: Event) {
   store.updateItemFieldsDebounced(item.value.id, { [field]: isNaN(num ?? NaN) ? undefined : num })
 }
 
+// ---- 公開棚スイッチ ----
+const pubVisible = computed(() => item.value?.showOnPublic !== false)
+
+function togglePublicVisibility() {
+  if (!item.value) return
+  store.updatePublicVisibility(item.value.id, !pubVisible.value)
+}
+
 // ---- マッププライバシー ----
 const mapVisible = computed(() => item.value?.showOnMap !== false)
 
@@ -488,7 +514,7 @@ async function doDelete() {
   position: relative;
   width: 100%;
   aspect-ratio: 3 / 4;
-  background: var(--bg-surface);
+  background: #ffffff;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -500,7 +526,7 @@ async function doDelete() {
 }
 .cover-wrap:hover .cover-camera-hint { opacity: 1; }
 
-.cover-img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+.cover-img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
 .cover-fallback {
   font-size: 14px;
@@ -713,6 +739,65 @@ async function doDelete() {
 .meta-price-input::-webkit-inner-spin-button,
 .meta-price-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 
+
+.public-card {
+  background: var(--bg-card);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-faint);
+}
+
+.public-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.public-label-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.public-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.public-hint {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.toggle-switch {
+  flex-shrink: 0;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  border: none;
+  background: var(--border);
+  cursor: pointer;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s;
+  position: relative;
+}
+.toggle-switch.on { background: var(--accent); }
+
+.toggle-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: transform 0.2s;
+  display: block;
+}
+.toggle-switch.on .toggle-thumb { transform: translateX(18px); }
 
 .action-card {
   background: var(--bg-card);

@@ -147,7 +147,7 @@ function setGridSize(s: GridSize) {
 
 // ---- カテゴリ ----
 
-const CATEGORY_ORDER: ItemCategory[] = ['book', 'music', 'video', 'game', 'electronics', 'camera', 'other']
+const CATEGORY_ORDER: ItemCategory[] = ['book', 'music', 'video', 'game', 'electronics', 'camera', 'shoes', 'clothing', 'bag', 'watch', 'instrument', 'hobby', 'sports', 'furniture', 'vehicle', 'other']
 
 const presentCategories = computed(() => {
   const cats = new Set(products.value.map(p => p.category).filter(Boolean) as ItemCategory[])
@@ -280,11 +280,11 @@ onMounted(async () => {
 .product-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
 .card-img-wrap {
-  width: 100%; aspect-ratio: 3 / 4; background: var(--bg-surface);
+  width: 100%; aspect-ratio: 3 / 4; background: #ffffff;
   overflow: hidden; display: flex; align-items: center; justify-content: center;
   padding: 8px; box-sizing: border-box;
 }
-.card-img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+.card-img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .card-img-empty { width: 100%; height: 100%; background: var(--bg-subtle); display: flex; align-items: center; justify-content: center; }
 .card-img-emoji { font-size: 28px; opacity: 0.4; }
 

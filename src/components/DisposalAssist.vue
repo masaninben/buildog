@@ -142,6 +142,26 @@ const buybackServices = computed(() => {
     { name: 'ゲオ',     domain: 'www.geosonline.co.jp', href: 'https://www.geosonline.co.jp/' },
     { name: 'ハードオフ', domain: 'www.hardoff.co.jp',  href: 'https://www.hardoff.co.jp/' },
   ]
+  if (cat === 'shoes') return [
+    { name: 'ZOZO', domain: 'zozo.jp', href: `https://zozo.jp/search/?keyword=${e}` },
+    { name: 'スニーカーダンク', domain: 'snkrdunk.com', href: `https://snkrdunk.com/sneakers/search/?q=${e}` },
+  ]
+  if (cat === 'clothing') return [
+    { name: 'ZOZO', domain: 'zozo.jp', href: `https://zozo.jp/search/?keyword=${e}` },
+    { name: 'ブランディア', domain: 'brandear.jp', href: `https://brandear.jp/` },
+  ]
+  if (cat === 'bag' || cat === 'watch') return [
+    { name: 'ブランディア', domain: 'brandear.jp', href: `https://brandear.jp/` },
+    { name: 'ブランドオフ', domain: 'www.brandoff.co.jp', href: `https://www.brandoff.co.jp/` },
+  ]
+  if (cat === 'instrument') return [
+    { name: 'イシバシ楽器', domain: 'www.ishibashi.co.jp', href: `https://www.ishibashi.co.jp/` },
+    { name: 'ハードオフ', domain: 'www.hardoff.co.jp', href: `https://www.hardoff.co.jp/` },
+  ]
+  if (cat === 'sports') return [
+    { name: 'スポーツデポ', domain: 'www.alpen-group.jp', href: `https://www.alpen-group.jp/shop/sportsdepot/` },
+    { name: 'ハードオフ', domain: 'www.hardoff.co.jp', href: `https://www.hardoff.co.jp/` },
+  ]
   return []
 })
 
@@ -151,7 +171,7 @@ function faviconUrl(domain: string): string {
 
 // 廃棄・処分
 const isLithiumRisk = computed(() =>
-  props.category === 'electronics' || props.category === 'camera' || props.category === 'game'
+  props.category === 'electronics' || props.category === 'camera' || props.category === 'game' || props.category === 'watch'
 )
 
 const municipalUrl = computed(() => {

@@ -8,6 +8,16 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
+      path: '/u/:uid',
+      name: 'public-shelf',
+      component: () => import('../views/PublicShelfView.vue'),
+    },
+    {
+      path: '/u/:uid/:itemId',
+      name: 'public-item',
+      component: () => import('../views/PublicItemView.vue'),
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
