@@ -7,15 +7,33 @@ export type ItemCategory =
   | 'game'
   | 'electronics'
   | 'camera'
+  | 'shoes'
+  | 'clothing'
+  | 'bag'
+  | 'watch'
+  | 'instrument'
+  | 'hobby'
+  | 'sports'
+  | 'furniture'
+  | 'vehicle'
   | 'other'
 
 export const CATEGORY_LABELS: Record<ItemCategory, string> = {
   book:        '本',
-  music:       '音楽',
+  music:       'CD・DVD',
   video:       '映像',
   game:        'ゲーム',
   electronics: '家電・ガジェット',
   camera:      'カメラ',
+  shoes:       '靴',
+  clothing:    '衣類',
+  bag:         'バッグ・財布',
+  watch:       '時計・アクセサリー',
+  instrument:  '楽器',
+  hobby:       'おもちゃ・ホビー・トレカ',
+  sports:      'スポーツ・アウトドア',
+  furniture:   '家具・インテリア',
+  vehicle:     '自動車・バイク',
   other:       'その他',
 }
 
@@ -26,6 +44,15 @@ export const CATEGORY_EMOJI: Record<ItemCategory, string> = {
   game:        '🎮',
   electronics: '💡',
   camera:      '📷',
+  shoes:       '👟',
+  clothing:    '👗',
+  bag:         '👜',
+  watch:       '⌚',
+  instrument:  '🎸',
+  hobby:       '🧸',
+  sports:      '⚽',
+  furniture:   '🛋',
+  vehicle:     '🚗',
   other:       '📦',
 }
 
@@ -49,4 +76,5 @@ export interface ShelfItem {
   acquirePrice?: number   // 取得金額（円）
   sellPrice?: number      // 売却・譲渡時の金額（円）
   showOnMap?: boolean     // 位置情報をマップに反映するか（undefined = true）
+  showOnPublic?: boolean  // 公開棚に表示するか（undefined = true）
 }

@@ -138,17 +138,26 @@ function toggleTheme() {
 }
 
 .logo-btn {
-  background: none;
   border: none;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--accent);
+  font-size: 18px;
+  font-weight: 800;
+  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0.04em;
+  background: linear-gradient(180deg,
+    #f8f0c0 0%,
+    #c9941a 22%,
+    #f5d060 48%,
+    #a87010 74%,
+    #f0e0a0 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   cursor: pointer;
-  font-family: inherit;
   padding: 0;
   user-select: none;
   flex-shrink: 0;
+  line-height: 1;
 }
 
 .toolbar-nav {

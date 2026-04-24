@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#0a0907"/>
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#f8f0c0"/>
+      <stop offset="22%"  stop-color="#c9941a"/>
+      <stop offset="48%"  stop-color="#f5d060"/>
+      <stop offset="74%"  stop-color="#a87010"/>
+      <stop offset="100%" stop-color="#f0e0a0"/>
+    </linearGradient>
+  </defs>
+  <text
+    x="32" y="32"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    font-family="'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif"
+    font-size="38"
+    font-weight="800"
+    fill="url(#gold)"
+  >P</text>
+</svg>

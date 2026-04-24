@@ -290,6 +290,17 @@ export const store = {
     }, 800)
   },
 
+  // 公開棚への表示切り替え
+  async updatePublicVisibility(id: string, show: boolean) {
+    const uid = authState.user?.uid
+    if (!uid) return
+    const item = state.items.find(i => i.id === id)
+    if (!item) return
+    const current = item.showOnPublic !== false
+    if (current === show) return
+    await updateDoc(doc(db, 'users', uid, 'items', id), { showOnPublic: show })
+  },
+
   // マップ表示切り替え
   async updateMapVisibility(id: string, show: boolean) {
     const uid = authState.user?.uid
