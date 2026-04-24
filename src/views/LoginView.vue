@@ -99,7 +99,15 @@
       <div class="section-inner narrow center">
         <p class="hero-logo">Penstok</p>
         <p class="cta-tagline">あなたの所有を、記録しよう。</p>
-        <button class="google-btn" @click="handleSignIn" :disabled="loading">
+
+        <!-- アプリ内ブラウザ警告 -->
+        <div v-if="isInAppBrowser" class="inapp-warning">
+          <p class="inapp-title">⚠️ このブラウザではログインできません</p>
+          <p class="inapp-desc">LINEやInstagramなどのアプリ内ブラウザはGoogleログインをブロックします。<br>右下のメニューから <strong>「ブラウザで開く」</strong> または <strong>「Safariで開く」</strong> を選択してください。</p>
+          <button class="copy-url-btn" @click="copyUrl">{{ copied ? '✓ コピーしました' : 'URLをコピーする' }}</button>
+        </div>
+
+        <button v-else class="google-btn" @click="handleSignIn" :disabled="loading">
           <svg class="google-icon" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -129,9 +137,27 @@ import { signInWithGoogle } from '../lib/auth'
 
 const router = useRouter()
 const loading = ref(false)
+const copied = ref(false)
+
+// アプリ内ブラウザ（LINE, Instagram, Facebook, Twitter等）を検知
+function detectInAppBrowser(): boolean {
+  const ua = navigator.userAgent
+  return /Line\/|FBAN|FBAV|Instagram|Twitter|Snapchat|TikTok|MicroMessenger|GSA\//.test(ua)
+}
+const isInAppBrowser = ref(detectInAppBrowser())
 
 function scrollToLogin() {
   document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })
+}
+
+async function copyUrl() {
+  try {
+    await navigator.clipboard.writeText(window.location.href)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch {
+    // fallback
+  }
 }
 
 async function handleSignIn() {
@@ -409,6 +435,48 @@ async function handleSignIn() {
 }
 .google-btn:disabled { opacity: 0.4; cursor: default; }
 .google-icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* ── アプリ内ブラウザ警告 ── */
+.inapp-warning {
+  width: 100%;
+  max-width: 320px;
+  background: rgba(224, 120, 112, 0.1);
+  border: 1.5px solid rgba(224, 120, 112, 0.35);
+  border-radius: 14px;
+  padding: 18px 20px;
+  text-align: left;
+  margin-bottom: 8px;
+}
+.inapp-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e07870;
+  margin-bottom: 10px;
+}
+.inapp-desc {
+  font-size: 12px;
+  color: rgba(240, 234, 216, 0.65);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.inapp-desc strong {
+  color: rgba(240, 234, 216, 0.9);
+}
+.copy-url-btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: rgba(201, 148, 42, 0.15);
+  border: 1px solid rgba(201, 148, 42, 0.4);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c9942a;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.copy-url-btn:hover { background: rgba(201, 148, 42, 0.25); }
 
 .cta-note {
   margin: 20px 0 0;

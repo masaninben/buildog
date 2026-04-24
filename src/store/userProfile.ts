@@ -1,5 +1,5 @@
 import { reactive, watch } from 'vue'
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, getDoc, getDocs, setDoc, updateDoc, serverTimestamp, collection, query, where, limit } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { authState } from '../lib/auth'
 
@@ -20,6 +20,7 @@ export interface UserProfile {
   role: UserRole
   prefecture?: string
   city?: string
+  username?: string
 }
 
 const state = reactive({
@@ -59,6 +60,7 @@ watch(
         role:        (d.role         as UserRole) ?? 'user',
         prefecture:  (d.prefecture   as string)   ?? '',
         city:        (d.city         as string)   ?? '',
+        username:    (d.username     as string)   ?? '',
       }
     } else {
       const profile = {
@@ -99,5 +101,38 @@ export const userProfileStore = {
     if (state.profile) {
       state.profile = { ...state.profile, prefecture, city }
     }
+  },
+
+  async updateUsername(username: string): Promise<{ ok: boolean; error?: string }> {
+    const uid = state.profile?.uid
+    if (!uid) return { ok: false, error: 'ログインが必要です' }
+    const trimmed = username.trim().toLowerCase()
+    if (trimmed && !/^[a-z0-9_]{3,20}$/.test(trimmed)) {
+      return { ok: false, error: '3〜20文字の英数字・アンダースコアのみ使用できます' }
+    }
+    // 重複チェック
+    if (trimmed) {
+      const q = query(collection(db, 'users'), where('username', '==', trimmed), limit(1))
+      const snap = await getDocs(q)
+      if (!snap.empty && snap.docs[0].id !== uid) {
+        return { ok: false, error: 'このユーザー名はすでに使われています' }
+      }
+    }
+    await updateDoc(doc(db, 'users', uid), { username: trimmed })
+    if (state.profile) {
+      state.profile = { ...state.profile, username: trimmed }
+    }
+    return { ok: true }
+  },
+
+  // ユーザー名 or UID から uid を解決
+  async resolveUid(handle: string): Promise<string | null> {
+    // Firebase UID は28文字の英数字
+    if (/^[A-Za-z0-9]{20,}$/.test(handle)) return handle
+    // ユーザー名で検索
+    const q = query(collection(db, 'users'), where('username', '==', handle.toLowerCase()), limit(1))
+    const snap = await getDocs(q)
+    if (!snap.empty) return snap.docs[0].id
+    return null
   },
 }

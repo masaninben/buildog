@@ -1,7 +1,7 @@
 <template>
   <div class="pub-item-view">
     <header class="pub-header">
-      <button class="back-btn" @click="router.push(`/u/${uid}`)">←</button>
+      <button class="back-btn" @click="router.push(`/u/${handle}`)">←</button>
       <span class="pub-logo">Penstok</span>
       <a href="/login" class="pub-login-btn">ログイン</a>
     </header>
@@ -127,6 +127,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { userProfileStore } from '../store/userProfile'
 import { CATEGORY_LABELS, CATEGORY_EMOJI, type ItemCategory } from '../types'
 
 interface PublicItemDetail {
@@ -147,7 +148,7 @@ const METHODS = [
 
 const route = useRoute()
 const router = useRouter()
-const uid = route.params.uid as string
+const handle = route.params.uid as string
 const itemId = route.params.itemId as string
 
 const item = ref<PublicItemDetail | null>(null)
@@ -155,6 +156,8 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
+    const uid = await userProfileStore.resolveUid(handle)
+    if (!uid) { loading.value = false; return }
     const snap = await getDoc(doc(db, 'users', uid, 'items', itemId))
     if (snap.exists()) {
       const data = snap.data()

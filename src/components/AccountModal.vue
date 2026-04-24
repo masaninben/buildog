@@ -110,6 +110,34 @@
 
       <hr class="divider" />
 
+      <!-- ユーザー名設定 -->
+      <div class="section-label">ユーザー名</div>
+      <p class="section-hint">棚の共有URLに使われます。設定すると <code class="code-hint">/u/ユーザー名</code> でアクセスできます。</p>
+      <div class="field">
+        <label class="field-label">ユーザー名</label>
+        <div class="username-input-wrap">
+          <span class="username-prefix">@</span>
+          <input
+            v-model="usernameInput"
+            class="field-input username-input"
+            type="text"
+            placeholder="例：masahiro_shelf"
+            maxlength="20"
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+          />
+        </div>
+        <p class="field-hint">3〜20文字の英数字・アンダースコア（_）</p>
+      </div>
+      <button class="save-btn" :disabled="savingUsername" @click="saveUsername">
+        {{ savingUsername ? '保存中…' : 'ユーザー名を保存' }}
+      </button>
+      <p v-if="usernameSaved" class="saved-msg">✓ 保存しました</p>
+      <p v-if="usernameError" class="error-msg">{{ usernameError }}</p>
+
+      <hr class="divider" />
+
       <!-- 居住地設定 -->
       <div class="section-label">居住地設定</div>
       <p class="section-hint">廃棄方法の案内などに使います。市区町村まで設定してください。</p>
@@ -306,6 +334,26 @@ const nextAction = computed(() => {
   if (withPrice < items.length * 0.3) return '取得金額を記録するとスコアが上がります'
   return '継続して記録を続けるとスコアが上がります'
 })
+
+// ---- ユーザー名 ----
+const usernameInput = ref(profile.value?.username ?? '')
+const savingUsername = ref(false)
+const usernameSaved = ref(false)
+const usernameError = ref('')
+
+async function saveUsername() {
+  savingUsername.value = true
+  usernameSaved.value = false
+  usernameError.value = ''
+  const result = await userProfileStore.updateUsername(usernameInput.value)
+  if (result.ok) {
+    usernameSaved.value = true
+    setTimeout(() => { usernameSaved.value = false }, 2000)
+  } else {
+    usernameError.value = result.error ?? '保存に失敗しました'
+  }
+  savingUsername.value = false
+}
 
 // ---- 居住地 ----
 const prefecture = ref(profile.value?.prefecture ?? '')
@@ -756,6 +804,40 @@ const PREFECTURES = [
 }
 
 .field-hint-error { font-size: 11px; color: var(--danger); }
+.field-hint { font-size: 11px; color: var(--text-faint); margin-top: 4px; }
+
+.username-input-wrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-input);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.username-input-wrap:focus-within { border-color: var(--accent); }
+.username-prefix {
+  padding: 0 10px 0 12px;
+  font-size: 15px;
+  color: var(--text-faint);
+  user-select: none;
+}
+.username-input {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  flex: 1;
+  padding-left: 0 !important;
+}
+.code-hint {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--accent);
+}
 
 .save-btn {
   height: 42px;

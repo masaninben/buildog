@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0907"/>
+      <stop offset="100%" stop-color="#1a150a"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#f8f0c0"/>
+      <stop offset="22%"  stop-color="#c9941a"/>
+      <stop offset="48%"  stop-color="#f5d060"/>
+      <stop offset="74%"  stop-color="#a87010"/>
+      <stop offset="100%" stop-color="#f0e0a0"/>
+    </linearGradient>
+    <linearGradient id="card1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2a2218"/>
+      <stop offset="100%" stop-color="#1a1510"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Subtle grid lines -->
+  <line x1="0" y1="210" x2="1200" y2="210" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+  <line x1="0" y1="420" x2="1200" y2="420" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+  <line x1="400" y1="0" x2="400" y2="630" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+  <line x1="800" y1="0" x2="800" y2="630" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+
+  <!-- Mock shelf cards (right side) -->
+  <g opacity="0.35">
+    <!-- Card 1 -->
+    <rect x="660" y="80" width="120" height="160" rx="10" fill="url(#card1)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <rect x="672" y="92" width="96" height="120" rx="6" fill="rgba(255,255,255,0.06)"/>
+    <rect x="672" y="220" width="60" height="8" rx="4" fill="rgba(255,255,255,0.15)"/>
+    <!-- Card 2 -->
+    <rect x="800" y="80" width="120" height="160" rx="10" fill="url(#card1)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <rect x="812" y="92" width="96" height="120" rx="6" fill="rgba(255,255,255,0.06)"/>
+    <rect x="812" y="220" width="72" height="8" rx="4" fill="rgba(255,255,255,0.15)"/>
+    <!-- Card 3 -->
+    <rect x="940" y="80" width="120" height="160" rx="10" fill="url(#card1)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <rect x="952" y="92" width="96" height="120" rx="6" fill="rgba(255,255,255,0.06)"/>
+    <rect x="952" y="220" width="50" height="8" rx="4" fill="rgba(255,255,255,0.15)"/>
+    <!-- Card 4 -->
+    <rect x="660" y="260" width="120" height="160" rx="10" fill="url(#card1)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <rect x="672" y="272" width="96" height="120" rx="6" fill="rgba(255,255,255,0.06)"/>
+    <!-- Card 5 -->
+    <rect x="800" y="260" width="120" height="160" rx="10" fill="url(#card1)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <rect x="812" y="272" width="96" height="120" rx="6" fill="rgba(255,255,255,0.06)"/>
+    <!-- Card 6 -->
+    <rect x="940" y="260" width="120" height="160" rx="10" fill="url(#card1)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <rect x="952" y="272" width="96" height="120" rx="6" fill="rgba(255,255,255,0.06)"/>
+    <!-- Card 7 -->
+    <rect x="660" y="440" width="120" height="120" rx="10" fill="url(#card1)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <rect x="800" y="440" width="120" height="120" rx="10" fill="url(#card1)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <rect x="940" y="440" width="120" height="120" rx="10" fill="url(#card1)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  </g>
+
+  <!-- Gradient fade from right to left over cards -->
+  <defs>
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0a0907" stop-opacity="1"/>
+      <stop offset="40%" stop-color="#0a0907" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#0a0907" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="600" y="0" width="600" height="630" fill="url(#fade)"/>
+
+  <!-- Left: Logo + copy -->
+  <!-- Logo -->
+  <text
+    x="80" y="265"
+    font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif"
+    font-size="88"
+    font-weight="900"
+    letter-spacing="2"
+    fill="url(#gold)"
+  >Penstok</text>
+
+  <!-- Tagline -->
+  <text
+    x="84" y="318"
+    font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif"
+    font-size="28"
+    font-weight="400"
+    fill="rgba(240,234,216,0.55)"
+    letter-spacing="1"
+  >手放す、を設計する。</text>
+
+  <!-- Description -->
+  <text
+    x="84" y="368"
+    font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif"
+    font-size="20"
+    font-weight="400"
+    fill="rgba(240,234,216,0.35)"
+  >モノの所有を記録・管理・共有</text>
+
+  <!-- Gold accent line -->
+  <rect x="84" y="390" width="60" height="2" rx="1" fill="url(#gold)" opacity="0.6"/>
+
+  <!-- URL hint -->
+  <text
+    x="84" y="440"
+    font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif"
+    font-size="16"
+    fill="rgba(201,148,42,0.6)"
+    letter-spacing="1"
+  >penstok-c66dd.web.app</text>
+</svg>

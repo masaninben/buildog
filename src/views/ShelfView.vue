@@ -21,6 +21,14 @@
       </div>
 
       <div class="toolbar-right">
+        <button class="share-btn" @click="exportImage" :disabled="exporting" title="画像として保存">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="share-icon">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span class="share-label">{{ exporting ? '…' : '保存' }}</span>
+        </button>
         <button class="share-btn" @click="shareShelf" title="棚を共有">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="share-icon">
             <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
@@ -64,6 +72,7 @@
 
       <div
         v-else
+        ref="gridEl"
         class="shelf-grid"
         :style="{ gridTemplateColumns: `repeat(auto-fill, minmax(${gridPx}px, 1fr))` }"
       >
@@ -87,6 +96,7 @@ import { productStore } from '../store/products'
 import { userProfileStore } from '../store/userProfile'
 import { authState } from '../lib/auth'
 import { CATEGORY_LABELS, CATEGORY_EMOJI, type ShelfItem, type ItemCategory } from '../types'
+import html2canvas from 'html2canvas'
 
 const router = useRouter()
 
@@ -162,10 +172,41 @@ function handleCardClick(item: ShelfItem) {
   router.push({ name: 'item-detail', params: { id: item.id } })
 }
 
-async function shareShelf() {
+const gridEl = ref<HTMLElement | null>(null)
+const exporting = ref(false)
+
+async function exportImage() {
+  if (!gridEl.value || exporting.value) return
+  exporting.value = true
+  try {
+    const canvas = await html2canvas(gridEl.value, {
+      backgroundColor: '#0a0907',
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+    })
+    const link = document.createElement('a')
+    link.download = `penstok-shelf-${Date.now()}.png`
+    link.href = canvas.toDataURL('image/png')
+    link.click()
+  } catch (e) {
+    console.warn('export error', e)
+  } finally {
+    exporting.value = false
+  }
+}
+
+function getShareUrl() {
   const uid = authState.user?.uid
-  if (!uid) return
-  const url = `${window.location.origin}/u/${uid}`
+  if (!uid) return ''
+  const username = userProfileStore.profile?.username
+  const handle = username || uid
+  return `${window.location.origin}/u/${handle}`
+}
+
+async function shareShelf() {
+  const url = getShareUrl()
+  if (!url) return
   const text = `私の棚（${allItems.value.filter(i => i.status === 'owned').length}件）をPenstokで公開中`
   if (navigator.share) {
     await navigator.share({ title: 'My Penstok Shelf', text, url }).catch(() => {})
@@ -174,9 +215,6 @@ async function shareShelf() {
     alert('共有URLをコピーしました')
   }
 }
-
-// userProfileStore を参照して未使用警告を回避
-void userProfileStore
 </script>
 
 <style scoped>

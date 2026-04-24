@@ -2,9 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ユーザー自身のドキュメントのみ読み書き可
+    // ユーザードキュメント
+    // 読み取り：本人 or 認証済みユーザー or ユーザー名解決のため公開（username・displayName目的）
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if true;  // username によるUID解決（公開棚URL対応）
+      allow write: if request.auth != null && request.auth.uid == uid;
 
       // 棚アイテム（書き込みはユーザー自身のみ、所有中アイテムは誰でも読み取り可）
       match /items/{itemId} {

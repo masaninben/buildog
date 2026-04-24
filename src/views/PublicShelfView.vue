@@ -31,7 +31,7 @@
           v-for="item in items"
           :key="item.id"
           class="pub-card"
-          @click="router.push(`/u/${uid}/${item.id}`)"
+          @click="router.push(`/u/${handle}/${item.id}`)"
         >
           <div class="pub-img-wrap">
             <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="pub-img" />
@@ -53,6 +53,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { userProfileStore } from '../store/userProfile'
 import { CATEGORY_EMOJI, type ItemCategory } from '../types'
 
 interface PublicItem {
@@ -66,7 +67,8 @@ interface PublicItem {
 
 const route = useRoute()
 const router = useRouter()
-const uid = route.params.uid as string
+const handle = route.params.uid as string
+const resolvedUid = ref<string | null>(null)
 
 const items = ref<PublicItem[]>([])
 const loading = ref(true)
@@ -89,6 +91,9 @@ function setGridSize(s: GridSize) {
 
 onMounted(async () => {
   try {
+    const uid = await userProfileStore.resolveUid(handle)
+    if (!uid) { loading.value = false; return }
+    resolvedUid.value = uid
     const q = query(
       collection(db, 'users', uid, 'items'),
       where('status', '==', 'owned'),
