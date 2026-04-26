@@ -22,9 +22,28 @@
           <li>顧客はログイン不要で閲覧のみ</li>
         </ul>
 
-        <button class="google-btn" :disabled="loading" @click="handleSignIn">
-          {{ loading ? 'ログイン中…' : 'Googleでログイン' }}
-        </button>
+        <form class="login-form" @submit.prevent="handleSignIn">
+          <input
+            v-model="email"
+            type="email"
+            placeholder="メールアドレス"
+            autocomplete="email"
+            required
+            class="login-input"
+          />
+          <input
+            v-model="password"
+            type="password"
+            placeholder="パスワード"
+            autocomplete="current-password"
+            required
+            class="login-input"
+          />
+          <p v-if="errorMsg" class="login-error">{{ errorMsg }}</p>
+          <button type="submit" class="login-btn" :disabled="loading">
+            {{ loading ? 'ログイン中…' : 'ログイン' }}
+          </button>
+        </form>
       </div>
     </section>
   </div>
@@ -33,16 +52,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { signInWithGoogle } from '../lib/auth'
+import { signInWithEmail } from '../lib/auth'
 
 const router = useRouter()
 const loading = ref(false)
+const email = ref('')
+const password = ref('')
+const errorMsg = ref('')
 
 async function handleSignIn() {
   loading.value = true
+  errorMsg.value = ''
   try {
-    await signInWithGoogle()
+    await signInWithEmail(email.value, password.value)
     router.push({ name: 'project-list' })
+  } catch {
+    errorMsg.value = 'メールアドレスまたはパスワードが正しくありません'
   } finally {
     loading.value = false
   }
@@ -144,8 +169,36 @@ async function handleSignIn() {
   border: 1px solid var(--border);
 }
 
-.google-btn {
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   margin-top: 8px;
+}
+
+.login-input {
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.login-input:focus {
+  border-color: var(--accent);
+}
+
+.login-error {
+  color: #e53e3e;
+  font-size: 13px;
+  margin: 0;
+}
+
+.login-btn {
   height: 52px;
   border: none;
   border-radius: 14px;
@@ -154,6 +207,12 @@ async function handleSignIn() {
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 @media (max-width: 640px) {
