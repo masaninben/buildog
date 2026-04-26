@@ -1,22 +1,22 @@
 <template>
   <div class="public-project-view">
     <header class="pub-header">
-      <div>
-        <p class="pub-badge">Buildog Public</p>
-        <h1 class="pub-title">{{ project?.name || '公開案件' }}</h1>
-        <p v-if="project" class="pub-meta">{{ [project.clientName, project.siteAddress].filter(Boolean).join(' / ') }}</p>
+      <div class="pub-header-text">
+        <p class="pub-badge">Buildog</p>
+        <h1 class="pub-title">{{ project?.name || '施工レポート' }}</h1>
+        <p v-if="project?.siteAddress" class="pub-meta">{{ project.siteAddress }}</p>
       </div>
       <a href="/login" class="pub-login-btn">施工会社ログイン</a>
     </header>
 
     <main class="pub-body">
-      <div v-if="loading" class="state-card">読み込み中…</div>
-      <div v-else-if="!project" class="state-card">この案件は公開されていません。</div>
+      <div v-if="loading" class="state-msg">読み込み中…</div>
+      <div v-else-if="!project" class="state-msg">この施工レポートは公開されていません。</div>
 
       <template v-else>
         <section class="overview-card">
           <div class="overview-item">
-            <span class="overview-label">公開写真</span>
+            <span class="overview-label">施工写真</span>
             <span class="overview-value">{{ photos.length }}枚</span>
           </div>
           <div class="overview-item">
@@ -25,34 +25,55 @@
           </div>
         </section>
 
-        <section class="timeline-card">
+        <section class="photo-section">
           <div class="section-head">
-            <h2 class="section-title">施工写真</h2>
-            <p class="section-copy">公開されている写真だけを、工事の順番どおりに表示しています。</p>
+            <h2 class="section-title">施工の記録</h2>
+            <p class="section-copy">施主様向けに公開されている写真をご確認いただけます。</p>
           </div>
 
-          <div v-if="photos.length === 0" class="state-card state-card--inner">公開中の写真はまだありません。</div>
+          <div v-if="photos.length === 0" class="empty-state">
+            <img src="/brand/buildog-helmet-mascot.png" alt="" class="empty-mascot" />
+            <p class="empty-text">現在、公開中の写真はありません。</p>
+            <p class="empty-sub">施工開始後に写真が追加されます。</p>
+          </div>
 
-          <div v-else class="photo-grid">
-            <article v-for="photo in photos" :key="photo.id" class="photo-card">
-              <img :src="photo.url" class="photo-image" />
-              <div class="photo-body">
-                <div class="photo-top">
-                  <p class="photo-tag">{{ PROJECT_PHOTO_TAG_LABELS[photo.tag] }}</p>
-                  <p class="photo-date">{{ formatDateTime(photo.createdAt) }}</p>
-                </div>
-                <p v-if="photo.memo" class="photo-caption">{{ photo.memo }}</p>
+          <template v-else>
+            <!-- タグごとにグループ表示 -->
+            <div v-for="group in photoGroups" :key="group.tag" class="photo-group">
+              <h3 class="group-label">{{ group.label }}</h3>
+              <div class="photo-grid">
+                <article v-for="photo in group.photos" :key="photo.id" class="photo-card" @click="openLightbox(photo)">
+                  <div class="photo-wrap">
+                    <img :src="photo.url" :alt="group.label" class="photo-image" loading="lazy" />
+                    <div v-if="photo.memo" class="photo-memo-badge">メモあり</div>
+                  </div>
+                </article>
               </div>
-            </article>
-          </div>
+            </div>
+          </template>
         </section>
       </template>
     </main>
+
+    <!-- ライトボックス -->
+    <div v-if="lightboxPhoto" class="lightbox" @click.self="lightboxPhoto = null">
+      <div class="lightbox-inner">
+        <button class="lightbox-close" @click="lightboxPhoto = null">✕</button>
+        <img :src="lightboxPhoto.url" class="lightbox-img" />
+        <div v-if="lightboxPhoto.memo" class="lightbox-memo">{{ lightboxPhoto.memo }}</div>
+        <p class="lightbox-date">{{ formatDateTime(lightboxPhoto.createdAt) }}</p>
+      </div>
+    </div>
+
+    <footer class="pub-footer">
+      <span class="pub-footer-logo">Buildog</span>
+      <p class="pub-footer-copy">施工記録をわかりやすく施主様へ</p>
+    </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { projectStore } from '../store/projects'
 import { PROJECT_PHOTO_TAG_LABELS, type BuildogProject, type ProjectPhoto } from '../types'
@@ -61,6 +82,19 @@ const route = useRoute()
 const loading = ref(true)
 const project = ref<BuildogProject | null>(null)
 const photos = ref<ProjectPhoto[]>([])
+const lightboxPhoto = ref<ProjectPhoto | null>(null)
+
+const TAG_ORDER = ['before', 'during', 'material', 'after', 'unset'] as const
+
+const photoGroups = computed(() => {
+  return TAG_ORDER
+    .map(tag => ({
+      tag,
+      label: PROJECT_PHOTO_TAG_LABELS[tag] ?? tag,
+      photos: photos.value.filter(p => p.tag === tag),
+    }))
+    .filter(g => g.photos.length > 0)
+})
 
 onMounted(async () => {
   try {
@@ -73,137 +107,212 @@ onMounted(async () => {
   }
 })
 
+function openLightbox(photo: ProjectPhoto) {
+  lightboxPhoto.value = photo
+}
+
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString('ja-JP')
 }
 
 function formatDateTime(value: string) {
-  return new Date(value).toLocaleString('ja-JP')
+  return new Date(value).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 </script>
 
 <style scoped>
 .public-project-view {
   min-height: 100vh;
-  background:
-    linear-gradient(180deg, rgba(30, 90, 174, 0.14), rgba(30, 90, 174, 0.04) 220px, transparent 320px),
-    var(--bg);
+  background: var(--bg);
 }
 
+/* ヘッダー */
 .pub-header {
-  padding: 26px 16px 14px;
+  padding: 20px 16px 14px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  background: linear-gradient(180deg, rgba(30,90,174,0.12), transparent 100%);
+}
+
+.pub-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .pub-badge {
   color: var(--accent-strong);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 8px;
 }
 
 .pub-title {
-  font-size: clamp(24px, 6vw, 40px);
-  line-height: 1.15;
+  font-size: clamp(20px, 5vw, 32px);
+  font-weight: 900;
+  line-height: 1.2;
 }
 
-.pub-meta,
-.section-copy,
-.photo-date {
+.pub-meta {
+  font-size: 13px;
   color: var(--text-sub);
 }
 
 .pub-login-btn {
-  height: 40px;
+  flex-shrink: 0;
+  height: 36px;
   padding: 0 14px;
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  border: 1px solid rgba(30, 90, 174, 0.18);
-  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
   color: var(--accent-strong);
   text-decoration: none;
+  font-size: 12px;
   font-weight: 700;
-  box-shadow: var(--shadow-sm);
 }
 
+/* ボディ */
 .pub-body {
-  padding: 16px;
-  display: grid;
-  gap: 16px;
+  padding: 12px 12px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.overview-card,
-.timeline-card,
-.state-card {
+.state-msg {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* 概要カード */
+.overview-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 24px;
-  box-shadow: var(--shadow-sm);
-}
-
-.overview-card {
-  padding: 16px;
+  border-radius: 18px;
+  padding: 14px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
 
 .overview-item {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .overview-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 
 .overview-value {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 900;
 }
 
-.timeline-card,
-.state-card {
+/* 写真セクション */
+.photo-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
   padding: 16px;
-}
-
-.state-card--inner {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .section-head {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .section-title {
-  font-size: 18px;
+  font-size: 16px;
+  font-weight: 900;
 }
 
+.section-copy {
+  font-size: 12px;
+  color: var(--text-sub);
+  line-height: 1.7;
+}
+
+/* 空状態 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 16px;
+}
+
+.empty-mascot {
+  width: 100px;
+  border-radius: 16px;
+}
+
+.empty-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+
+.empty-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* タググループ */
+.photo-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent-strong);
+  padding: 4px 10px;
+  background: var(--accent-bg);
+  border-radius: 999px;
+  width: fit-content;
+}
+
+/* 写真グリッド */
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 
 .photo-card {
-  border-radius: 18px;
+  border-radius: 12px;
   overflow: hidden;
   background: var(--bg-surface);
-  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.photo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.photo-wrap {
+  position: relative;
 }
 
 .photo-image {
@@ -213,45 +322,130 @@ function formatDateTime(value: string) {
   display: block;
 }
 
-.photo-body {
-  padding: 10px;
-  display: grid;
-  gap: 8px;
-}
-
-.photo-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.photo-caption {
-  font-size: 12px;
-  line-height: 1.7;
-}
-
-.photo-tag {
-  width: fit-content;
-  padding: 5px 9px;
+.photo-memo-badge {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  padding: 3px 7px;
   border-radius: 999px;
-  background: var(--warm-bg);
-  color: var(--accent-strong);
-  font-size: 11px;
+  background: rgba(0,0,0,0.52);
+  color: #fff;
+  font-size: 10px;
   font-weight: 700;
 }
 
-@media (min-width: 900px) {
+/* ライトボックス */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.lightbox-inner {
+  position: relative;
+  width: min(100%, 600px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.lightbox-img {
+  width: 100%;
+  border-radius: 16px;
+  object-fit: contain;
+  max-height: 80vh;
+}
+
+.lightbox-memo {
+  font-size: 14px;
+  color: rgba(255,255,255,0.88);
+  line-height: 1.7;
+  background: rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.lightbox-date {
+  font-size: 12px;
+  color: rgba(255,255,255,0.48);
+  text-align: right;
+}
+
+/* フッター */
+.pub-footer {
+  padding: 20px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+}
+
+.pub-footer-logo {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--accent-strong);
+  letter-spacing: 0.04em;
+}
+
+.pub-footer-copy {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* レスポンシブ */
+@media (min-width: 600px) {
   .photo-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 860px) {
-  .pub-header,
-  .section-head {
+@media (min-width: 900px) {
+  .pub-body {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 16px 0 48px;
+  }
+
+  .pub-header {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px 0 16px;
+  }
+
+  .photo-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .pub-header {
+    padding: 16px 12px 12px;
     flex-direction: column;
-    align-items: flex-start;
+  }
+
+  .pub-footer {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
   }
 }
 </style>

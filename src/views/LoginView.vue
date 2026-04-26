@@ -15,7 +15,7 @@
           <h1 class="hero-title">工事の安心を、<br>写真で残す。</h1>
           <p class="hero-desc">
             リフォーム・建築工事の施工写真を案件ごとに整理し、<br class="br-md">
-            施主にはURLひとつで共有。ログイン不要で閲覧できます。
+            施主様にはURLひとつで共有。ログイン不要で閲覧できます。
           </p>
           <a href="#auth" class="hero-cta">無料で始める</a>
         </div>
@@ -53,7 +53,7 @@
               </svg>
             </div>
             <h3 class="feature-title">URLで即共有</h3>
-            <p class="feature-desc">施主はアカウント不要。URLかQRコードを渡すだけで、スマホからすぐ閲覧できます。</p>
+            <p class="feature-desc">施主様はアカウント不要。URLかQRコードを渡すだけで、スマホからすぐ閲覧できます。</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
@@ -61,8 +61,8 @@
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
             </div>
-            <h3 class="feature-title">公開範囲を管理</h3>
-            <p class="feature-desc">写真ごとに公開・非公開を切替。施主に見せたい写真だけを選んで共有できます。</p>
+            <h3 class="feature-title">施主様へ安心を届ける</h3>
+            <p class="feature-desc">工事の進捗をビフォー・施工中・アフターの流れで整理。施主様が安心できる報告書を手軽に作れます。</p>
           </div>
         </div>
       </div>
@@ -101,7 +101,7 @@
             <div class="step-num">3</div>
             <div class="step-body">
               <h3 class="step-title">URLを施主に渡す</h3>
-              <p class="step-desc">QRコードやURLをLINEで送るだけ。施主はログイン不要で施工状況を確認できます。</p>
+              <p class="step-desc">QRコードやURLをLINEで送るだけ。施主様はログイン不要で施工状況を確認できます。</p>
             </div>
           </div>
         </div>
