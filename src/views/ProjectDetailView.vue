@@ -18,8 +18,8 @@
       <section class="upload-card">
         <div class="section-head">
           <div>
-            <h2 class="section-title">写真をまとめて追加</h2>
-            <p v-if="uploadExpanded" class="section-copy">一度に最大10枚。タグとメモを先に揃えてから追加できます。</p>
+            <h2 class="section-title">写真を追加 / タグ設定</h2>
+            <p v-if="uploadExpanded" class="section-copy">一度に最大10枚。タグ・メモ・カラーを先に揃えてから追加できます。</p>
           </div>
           <button class="upload-toggle-btn" type="button" @click="uploadExpanded = !uploadExpanded">
             {{ uploadExpanded ? '閉じる ▲' : '開く ▼' }}
@@ -277,7 +277,9 @@
         <div class="summary-card summary-card--wide">
           <span class="summary-label">共有導線</span>
           <div class="summary-actions">
-            <button class="secondary-btn" @click="copyPublicUrl">公開URLをコピー</button>
+            <button class="secondary-btn" :class="{ 'secondary-btn--copied': urlCopied }" @click="copyPublicUrl">
+              {{ urlCopied ? 'コピーしました ✓' : '公開URLをコピー' }}
+            </button>
             <button class="secondary-btn secondary-btn--accent" @click="previewPublicPage">公開ページをプレビュー</button>
             <button class="secondary-btn secondary-btn--accent" @click="openQrModal">QR共有</button>
           </div>
@@ -411,6 +413,7 @@ const touchDragging = ref(false)
 const showQrModal = ref(false)
 const qrDataUrl = ref('')
 const showColorEditor = ref(false)
+const urlCopied = ref(false)
 
 const sizeOptions: { value: CardSize; label: string }[] = [
   { value: 'small', label: '小' },
@@ -629,6 +632,8 @@ async function setMascotCover(url: string) {
 
 async function copyPublicUrl() {
   await navigator.clipboard.writeText(publicUrl.value)
+  urlCopied.value = true
+  setTimeout(() => { urlCopied.value = false }, 2200)
 }
 
 function previewPublicPage() {
@@ -841,6 +846,12 @@ function formatDateTime(value: string) {
 }
 
 .secondary-btn--accent { color: var(--accent-strong); }
+.secondary-btn--copied {
+  background: var(--success-bg);
+  border-color: var(--success);
+  color: var(--success);
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
 
 .state-card,
 .summary-card,

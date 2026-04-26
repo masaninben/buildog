@@ -6,7 +6,6 @@
         <h1 class="pub-title">{{ project?.name || '施工レポート' }}</h1>
         <p v-if="project?.siteAddress" class="pub-meta">{{ project.siteAddress }}</p>
       </div>
-      <a href="/login" class="pub-login-btn">施工会社ログイン</a>
     </header>
 
     <main class="pub-body">
@@ -21,14 +20,22 @@
           </div>
           <div class="overview-item">
             <span class="overview-label">最終更新</span>
-            <span class="overview-value">{{ formatDate(project.updatedAt) }}</span>
+            <span class="overview-value overview-value--date">{{ formatDate(project.updatedAt) }}</span>
           </div>
         </section>
 
         <section class="photo-section">
           <div class="section-head">
             <h2 class="section-title">施工の記録</h2>
-            <p class="section-copy">施主様向けに公開されている写真をご確認いただけます。</p>
+            <div class="size-switch">
+              <button
+                v-for="opt in sizeOptions"
+                :key="opt.value"
+                class="size-btn"
+                :class="{ active: photoSize === opt.value }"
+                @click="setPhotoSize(opt.value)"
+              >{{ opt.label }}</button>
+            </div>
           </div>
 
           <div v-if="photos.length === 0" class="empty-state">
@@ -38,10 +45,9 @@
           </div>
 
           <template v-else>
-            <!-- タグごとにグループ表示 -->
             <div v-for="group in photoGroups" :key="group.tag" class="photo-group">
               <h3 class="group-label">{{ group.label }}</h3>
-              <div class="photo-grid">
+              <div class="photo-grid" :class="`photo-grid--${photoSize}`">
                 <article v-for="photo in group.photos" :key="photo.id" class="photo-card" @click="openLightbox(photo)">
                   <div class="photo-wrap">
                     <img :src="photo.url" :alt="group.label" class="photo-image" loading="lazy" />
@@ -78,11 +84,21 @@ import { useRoute } from 'vue-router'
 import { projectStore } from '../store/projects'
 import { PROJECT_PHOTO_TAG_LABELS, type BuildogProject, type ProjectPhoto } from '../types'
 
+type PhotoSize = 'small' | 'medium' | 'large'
+
+const PUB_SIZE_KEY = 'buildog_pub_photo_size'
+const sizeOptions: { value: PhotoSize; label: string }[] = [
+  { value: 'small', label: '小' },
+  { value: 'medium', label: '中' },
+  { value: 'large', label: '大' },
+]
+
 const route = useRoute()
 const loading = ref(true)
 const project = ref<BuildogProject | null>(null)
 const photos = ref<ProjectPhoto[]>([])
 const lightboxPhoto = ref<ProjectPhoto | null>(null)
+const photoSize = ref<PhotoSize>((localStorage.getItem(PUB_SIZE_KEY) as PhotoSize | null) ?? 'medium')
 
 const TAG_ORDER = ['before', 'during', 'material', 'after', 'unset'] as const
 
@@ -90,7 +106,7 @@ const photoGroups = computed(() => {
   return TAG_ORDER
     .map(tag => ({
       tag,
-      label: PROJECT_PHOTO_TAG_LABELS[tag] ?? tag,
+      label: PROJECT_PHOTO_TAG_LABELS[tag as keyof typeof PROJECT_PHOTO_TAG_LABELS] ?? tag,
       photos: photos.value.filter(p => p.tag === tag),
     }))
     .filter(g => g.photos.length > 0)
@@ -106,6 +122,11 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+function setPhotoSize(size: PhotoSize) {
+  photoSize.value = size
+  localStorage.setItem(PUB_SIZE_KEY, size)
+}
 
 function openLightbox(photo: ProjectPhoto) {
   lightboxPhoto.value = photo
@@ -129,10 +150,6 @@ function formatDateTime(value: string) {
 /* ヘッダー */
 .pub-header {
   padding: 20px 16px 14px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
   background: linear-gradient(180deg, rgba(30,90,174,0.12), transparent 100%);
 }
 
@@ -140,6 +157,8 @@ function formatDateTime(value: string) {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .pub-badge {
@@ -151,7 +170,7 @@ function formatDateTime(value: string) {
 }
 
 .pub-title {
-  font-size: clamp(20px, 5vw, 32px);
+  font-size: clamp(20px, 5vw, 36px);
   font-weight: 900;
   line-height: 1.2;
 }
@@ -161,27 +180,14 @@ function formatDateTime(value: string) {
   color: var(--text-sub);
 }
 
-.pub-login-btn {
-  flex-shrink: 0;
-  height: 36px;
-  padding: 0 14px;
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--accent-strong);
-  text-decoration: none;
-  font-size: 12px;
-  font-weight: 700;
-}
-
 /* ボディ */
 .pub-body {
   padding: 12px 12px 32px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .state-msg {
@@ -196,16 +202,15 @@ function formatDateTime(value: string) {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 18px;
-  padding: 14px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 24px;
 }
 
 .overview-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .overview-label {
@@ -217,8 +222,12 @@ function formatDateTime(value: string) {
 }
 
 .overview-value {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 900;
+}
+
+.overview-value--date {
+  font-size: 16px;
 }
 
 /* 写真セクション */
@@ -226,7 +235,7 @@ function formatDateTime(value: string) {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 18px;
-  padding: 16px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -234,8 +243,9 @@ function formatDateTime(value: string) {
 
 .section-head {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .section-title {
@@ -243,10 +253,33 @@ function formatDateTime(value: string) {
   font-weight: 900;
 }
 
-.section-copy {
-  font-size: 12px;
-  color: var(--text-sub);
-  line-height: 1.7;
+/* サイズスイッチ */
+.size-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.size-btn {
+  width: 32px;
+  height: 26px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.size-btn.active {
+  background: var(--accent);
+  color: #fff;
 }
 
 /* 空状態 */
@@ -278,7 +311,7 @@ function formatDateTime(value: string) {
 .photo-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .group-label {
@@ -294,12 +327,50 @@ function formatDateTime(value: string) {
 /* 写真グリッド */
 .photo-grid {
   display: grid;
+  gap: 6px;
+}
+
+/* 大: 1→2→3→4 */
+.photo-grid--large {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+/* 中（デフォルト）: 2→3→4→5 */
+.photo-grid--medium {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+}
+
+/* 小: 3→4→5→6 */
+.photo-grid--small {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (min-width: 480px) {
+  .photo-grid--large  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 640px) {
+  .photo-grid--large  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .photo-grid--medium { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .photo-grid--small  { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (min-width: 900px) {
+  .pub-body { padding: 16px 16px 48px; }
+  .pub-header { padding: 24px 16px 16px; }
+  .photo-grid--large  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .photo-grid--medium { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .photo-grid--small  { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1200px) {
+  .photo-grid--large  { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .photo-grid--medium { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .photo-grid--small  { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
 
 .photo-card {
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   background: var(--bg-surface);
   cursor: pointer;
@@ -348,7 +419,7 @@ function formatDateTime(value: string) {
 
 .lightbox-inner {
   position: relative;
-  width: min(100%, 600px);
+  width: min(100%, 720px);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -356,15 +427,15 @@ function formatDateTime(value: string) {
 
 .lightbox-close {
   position: absolute;
-  top: -40px;
+  top: -44px;
   right: 0;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border: none;
   border-radius: 50%;
   background: rgba(255,255,255,0.16);
   color: #fff;
-  font-size: 14px;
+  font-size: 16px;
   cursor: pointer;
 }
 
@@ -397,6 +468,8 @@ function formatDateTime(value: string) {
   align-items: center;
   justify-content: space-between;
   border-top: 1px solid var(--border);
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .pub-footer-logo {
@@ -411,35 +484,13 @@ function formatDateTime(value: string) {
   color: var(--text-muted);
 }
 
-/* レスポンシブ */
-@media (min-width: 600px) {
-  .photo-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 900px) {
-  .pub-body {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 16px 0 48px;
-  }
-
-  .pub-header {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 24px 0 16px;
-  }
-
-  .photo-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 480px) {
   .pub-header {
-    padding: 16px 12px 12px;
-    flex-direction: column;
+    padding: 16px 12px 10px;
+  }
+
+  .pub-body {
+    padding: 10px 10px 28px;
   }
 
   .pub-footer {
