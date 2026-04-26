@@ -26,6 +26,7 @@
       <div v-if="!projectStore.loaded" class="state-card">読み込み中…</div>
 
       <div v-else-if="projects.length === 0" class="empty-card">
+        <img src="/brand/buildog-bulldog-mascot.jpg" alt="Buildog bulldog mascot" class="empty-mascot" />
         <p class="empty-title">まだ案件がありません</p>
         <p class="empty-copy">最初の案件を作成すると、施工写真のアップロードと顧客共有を始められます。</p>
         <button class="create-btn" @click="router.push({ name: 'project-create' })">最初の案件を作成</button>
@@ -163,6 +164,14 @@ function openProject(project: BuildogProject) {
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
+}
+
+.empty-mascot {
+  width: 128px;
+  height: auto;
+  border-radius: 20px;
+  object-fit: cover;
+  box-shadow: var(--shadow-sm);
 }
 
 .empty-title {

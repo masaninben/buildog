@@ -2,6 +2,13 @@
   <div class="login-view">
     <section class="hero">
       <div class="hero-panel">
+        <div class="mascot-wrap">
+          <img src="/brand/buildog-bulldog-mascot.jpg" alt="Buildog bulldog mascot" class="mascot-image" />
+          <div class="mascot-badge">
+            <img src="/brand/buildog-bulldog-icon.jpg" alt="" class="mascot-badge-icon" />
+            <span>Buildog</span>
+          </div>
+        </div>
         <p class="hero-tag">施工写真共有サービス</p>
         <h1 class="hero-title">Buildog</h1>
         <p class="hero-copy">
@@ -70,6 +77,43 @@ async function handleSignIn() {
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+.mascot-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+}
+
+.mascot-image {
+  width: min(100%, 260px);
+  border-radius: 24px;
+  object-fit: cover;
+  box-shadow: var(--shadow-md);
+}
+
+.mascot-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(15, 23, 32, 0.86);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mascot-badge-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  object-fit: cover;
+  object-position: top;
 }
 
 .hero-tag {
