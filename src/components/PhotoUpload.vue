@@ -15,16 +15,32 @@
       class="hidden-input"
       @change="onFileSelect"
     />
+    <input
+      ref="cameraInput"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      class="hidden-input"
+      @change="onCameraSelect"
+    />
 
-    <div class="upload-visual">
+    <div v-if="!compactMode" class="upload-visual">
       <div class="upload-icon">+</div>
       <p class="upload-title">ここに写真をドラッグ＆ドロップ</p>
       <p class="upload-copy">またはボタンから選択してください。最大10枚、アップ前に自動で軽く圧縮します。</p>
+    </div>
+    <div v-else class="upload-visual upload-visual--compact">
+      <div class="upload-icon">+</div>
+      <p class="upload-title">写真を追加</p>
+      <p class="upload-copy">スマホではボタンから追加できます。最大10枚までまとめて選べます。</p>
     </div>
 
     <div class="upload-actions">
       <button class="add-photo-btn" type="button" @click="openPicker">
         写真を選択
+      </button>
+      <button v-if="compactMode" class="camera-btn" type="button" @click="openCamera">
+        撮影する
       </button>
       <span class="helper-text">一度に追加できる写真は最大10枚です</span>
     </div>
@@ -34,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 const MAX_FILES = 10
 const MAX_WIDTH = 1600
@@ -49,8 +65,11 @@ const emit = defineEmits<{
 }>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
+const cameraInput = ref<HTMLInputElement | null>(null)
 const notice = ref('')
 const isDragging = ref(false)
+const compactMode = ref(false)
+let mediaQuery: MediaQueryList | null = null
 
 defineExpose({
   openPicker,
@@ -58,6 +77,10 @@ defineExpose({
 
 function openPicker() {
   fileInput.value?.click()
+}
+
+function openCamera() {
+  cameraInput.value?.click()
 }
 
 async function handleFiles(selected: File[]) {
@@ -81,7 +104,14 @@ async function onFileSelect(event: Event) {
   ;(event.target as HTMLInputElement).value = ''
 }
 
+async function onCameraSelect(event: Event) {
+  const selected = Array.from((event.target as HTMLInputElement).files ?? [])
+  await handleFiles(selected)
+  ;(event.target as HTMLInputElement).value = ''
+}
+
 function onDragEnter() {
+  if (compactMode.value) return
   isDragging.value = true
 }
 
@@ -93,10 +123,25 @@ function onDragLeave(event: DragEvent) {
 }
 
 async function onDrop(event: DragEvent) {
+  if (compactMode.value) return
   isDragging.value = false
   const files = Array.from(event.dataTransfer?.files ?? []).filter((file) => file.type.startsWith('image/'))
   await handleFiles(files)
 }
+
+function syncCompactMode() {
+  compactMode.value = window.matchMedia('(max-width: 1024px)').matches
+}
+
+onMounted(() => {
+  mediaQuery = window.matchMedia('(max-width: 1024px)')
+  syncCompactMode()
+  mediaQuery.addEventListener('change', syncCompactMode)
+})
+
+onBeforeUnmount(() => {
+  mediaQuery?.removeEventListener('change', syncCompactMode)
+})
 
 async function compressImage(file: File): Promise<File> {
   if (!file.type.startsWith('image/')) return file
@@ -209,8 +254,55 @@ async function compressImage(file: File): Promise<File> {
   box-shadow: var(--shadow-sm);
 }
 
+.camera-btn {
+  min-width: 128px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--accent-strong);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .notice-text {
   color: var(--accent-strong);
   font-weight: 700;
+}
+
+@media (max-width: 1024px) {
+  .photo-upload {
+    padding: 16px;
+    border-style: solid;
+  }
+
+  .upload-visual--compact {
+    justify-items: flex-start;
+    text-align: left;
+    padding: 0;
+  }
+
+  .upload-actions {
+    align-items: stretch;
+  }
+
+  .helper-text {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .upload-actions {
+    gap: 10px;
+  }
+
+  .add-photo-btn,
+  .camera-btn {
+    min-width: 0;
+    flex: 1;
+    height: 44px;
+    font-size: 14px;
+  }
 }
 </style>

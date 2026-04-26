@@ -172,9 +172,8 @@ function openProject(project: BuildogProject) {
 .empty-mascot {
   width: 128px;
   height: auto;
-  border-radius: 20px;
   object-fit: cover;
-  box-shadow: var(--shadow-sm);
+  mix-blend-mode: multiply;
 }
 
 .empty-title {

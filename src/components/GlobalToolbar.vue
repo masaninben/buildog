@@ -1,7 +1,6 @@
 <template>
   <header class="global-toolbar">
     <button class="logo-btn" @click="router.push({ name: 'project-list' })">
-      <img src="/brand/buildog-bulldog-icon.jpg" alt="" class="logo-mark" />
       <span class="logo-word">Buildog</span>
     </button>
 
@@ -114,15 +113,6 @@ function toggleTheme() {
   align-items: center;
   gap: 10px;
   cursor: pointer;
-}
-
-.logo-mark {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  object-fit: cover;
-  object-position: top;
-  box-shadow: var(--shadow-sm);
 }
 
 .logo-word {

@@ -5,7 +5,6 @@
         <div class="mascot-wrap">
           <img src="/brand/buildog-bulldog-mascot.jpg" alt="Buildog bulldog mascot" class="mascot-image" />
           <div class="mascot-badge">
-            <img src="/brand/buildog-bulldog-icon.jpg" alt="" class="mascot-badge-icon" />
             <span>Buildog</span>
           </div>
         </div>
@@ -90,9 +89,8 @@ async function handleSignIn() {
 
 .mascot-image {
   width: min(100%, 260px);
-  border-radius: 24px;
   object-fit: cover;
-  box-shadow: var(--shadow-md);
+  mix-blend-mode: multiply;
 }
 
 .mascot-badge {
@@ -108,14 +106,6 @@ async function handleSignIn() {
   color: #fff;
   font-size: 12px;
   font-weight: 800;
-}
-
-.mascot-badge-icon {
-  width: 22px;
-  height: 22px;
-  border-radius: 8px;
-  object-fit: cover;
-  object-position: top;
 }
 
 .hero-tag {

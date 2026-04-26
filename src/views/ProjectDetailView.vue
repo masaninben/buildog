@@ -99,6 +99,7 @@
           <div>
             <h2 class="section-title">写真構成</h2>
             <p class="section-copy">写真中心で全体像を把握しながら、公開・タグ・並び順をその場で整えられます。</p>
+            <p class="section-copy section-copy--hint">写真は長押ししてドラッグすると並び替えできます。</p>
           </div>
 
           <div class="hero-actions">
@@ -156,21 +157,38 @@
                 v-for="(photo, index) in group.photos"
                 :key="photo.id"
                 class="photo-card"
-                :class="[`photo-card--${photoCardSize}`, { 'photo-card--selected': selectedPhotoIds.includes(photo.id) }]"
+                :class="[
+                  `photo-card--${photoCardSize}`,
+                  {
+                    'photo-card--selected': selectedPhotoIds.includes(photo.id),
+                    'photo-card--dragging': draggingPhotoId === photo.id,
+                    'photo-card--drop-target': touchDropPhotoId === photo.id && draggingPhotoId !== photo.id,
+                  },
+                ]"
+                :data-photo-id="photo.id"
+                :data-group-key="group.key"
                 draggable="true"
                 @dragstart="onDragStart(group.key, photo.id)"
                 @dragover.prevent
                 @drop="onDrop(group.key, photo.id)"
+                @pointerdown="onPointerDown($event, group.key, photo.id)"
+                @pointermove="onPointerMove"
+                @pointerup="onPointerUp(group.key, photo.id)"
+                @pointercancel="cancelPointerDrag"
                 @click="handlePhotoCardClick(photo)"
               >
                 <div class="photo-thumb-wrap">
                   <img :src="photo.url" class="photo-image" />
                   <div class="photo-overlay">
-                    <label v-if="selectionMode" class="check-badge" @click.stop>
-                      <input type="checkbox" :checked="selectedPhotoIds.includes(photo.id)" @change="togglePhotoSelection(photo.id)" />
-                    </label>
-                    <span v-else class="photo-status" :class="{ public: photo.isPublic }">{{ photo.isPublic ? '公開' : '非公開' }}</span>
-                    <span v-if="project.coverPhotoId === photo.id" class="cover-badge">代表</span>
+                    <div class="photo-overlay-left">
+                      <label v-if="selectionMode" class="check-badge" @click.stop>
+                        <input type="checkbox" :checked="selectedPhotoIds.includes(photo.id)" @change="togglePhotoSelection(photo.id)" />
+                      </label>
+                      <span v-else class="drag-badge" aria-hidden="true">⋮⋮</span>
+                    </div>
+                    <div class="photo-overlay-right">
+                      <span v-if="project.coverPhotoId === photo.id" class="cover-badge">代表</span>
+                    </div>
                   </div>
                 </div>
 
@@ -180,13 +198,11 @@
                     <span class="photo-date">{{ index + 1 }}</span>
                   </div>
                   <p v-if="photo.memo" class="photo-caption">{{ photo.memo }}</p>
-                  <div class="photo-actions">
-                    <button class="mini-toggle" :class="{ on: photo.isPublic }" type="button" @click.stop="togglePhotoPublic(photo)">
-                      {{ photo.isPublic ? '公開中' : '非公開' }}
+                  <div class="photo-switch-row" @click.stop>
+                    <span class="photo-status-text">{{ photo.isPublic ? '公開中' : '非公開' }}</span>
+                    <button class="toggle-switch toggle-switch--mini" :class="{ on: photo.isPublic }" type="button" @click="togglePhotoPublic(photo)">
+                      <span class="toggle-thumb" />
                     </button>
-                    <button class="sort-btn" type="button" @click.stop="movePhoto(photo.id, 'up')">↑</button>
-                    <button class="sort-btn" type="button" @click.stop="movePhoto(photo.id, 'down')">↓</button>
-                    <button class="edit-btn" type="button" @click.stop="openPhotoModal(photo)">編集</button>
                   </div>
                 </div>
               </article>
@@ -312,6 +328,10 @@ const selectedPhotoIds = ref<string[]>([])
 
 const draggingPhotoId = ref<string | null>(null)
 const draggingGroupKey = ref<GroupKey | null>(null)
+const touchDropPhotoId = ref<string | null>(null)
+const touchLongPressTimer = ref<number | null>(null)
+const suppressClickPhotoId = ref<string | null>(null)
+const touchDragging = ref(false)
 
 const showQrModal = ref(false)
 const qrDataUrl = ref('')
@@ -357,6 +377,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   projectStore.unsubscribePhotos(projectId.value)
   clearPendingFiles()
+  cancelPointerDrag()
 })
 
 function setPhotoCardSize(size: CardSize) {
@@ -403,15 +424,15 @@ async function toggleProjectPublic() {
   })
 }
 
-async function movePhoto(photoId: string, direction: 'up' | 'down') {
-  await projectStore.movePhoto(projectId.value, photoId, direction)
-}
-
 async function togglePhotoPublic(photo: ProjectPhoto) {
   await projectStore.updatePhotoVisibility(projectId.value, photo.id, !photo.isPublic)
 }
 
 function handlePhotoCardClick(photo: ProjectPhoto) {
+  if (suppressClickPhotoId.value === photo.id) {
+    suppressClickPhotoId.value = null
+    return
+  }
   if (selectionMode.value) {
     togglePhotoSelection(photo.id)
     return
@@ -535,18 +556,28 @@ function triggerUploaderFocus() {
 function onDragStart(groupKey: GroupKey, photoId: string) {
   draggingPhotoId.value = photoId
   draggingGroupKey.value = groupKey
+  touchDropPhotoId.value = photoId
 }
 
 async function onDrop(groupKey: GroupKey, targetPhotoId: string) {
-  if (!draggingPhotoId.value || draggingGroupKey.value !== groupKey || draggingPhotoId.value === targetPhotoId) return
+  if (!draggingPhotoId.value || draggingGroupKey.value !== groupKey || draggingPhotoId.value === targetPhotoId) {
+    cancelPointerDrag()
+    return
+  }
 
   const section = groupedPhotos.value.find((entry) => entry.key === groupKey)
-  if (!section) return
+  if (!section) {
+    cancelPointerDrag()
+    return
+  }
 
   const reordered = [...section.photos]
   const from = reordered.findIndex((entry) => entry.id === draggingPhotoId.value)
   const to = reordered.findIndex((entry) => entry.id === targetPhotoId)
-  if (from === -1 || to === -1) return
+  if (from === -1 || to === -1) {
+    cancelPointerDrag()
+    return
+  }
 
   const [moved] = reordered.splice(from, 1)
   reordered.splice(to, 0, moved)
@@ -555,8 +586,52 @@ async function onDrop(groupKey: GroupKey, targetPhotoId: string) {
     entry.key === groupKey ? reordered.map((photo) => photo.id) : entry.photos.map((photo) => photo.id)
   )
   await projectStore.reorderPhotos(projectId.value, flatIds)
+  cancelPointerDrag()
+}
+
+function onPointerDown(event: PointerEvent, groupKey: GroupKey, photoId: string) {
+  if (event.pointerType !== 'touch' || selectionMode.value) return
+  ;(event.currentTarget as HTMLElement | null)?.setPointerCapture?.(event.pointerId)
+  clearLongPressTimer()
+  touchLongPressTimer.value = window.setTimeout(() => {
+    draggingPhotoId.value = photoId
+    draggingGroupKey.value = groupKey
+    touchDropPhotoId.value = photoId
+    touchDragging.value = true
+    suppressClickPhotoId.value = photoId
+  }, 220)
+}
+
+function onPointerMove(event: PointerEvent) {
+  if (!touchDragging.value || event.pointerType !== 'touch') return
+  event.preventDefault()
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-photo-id]') as HTMLElement | null
+  if (!target) return
+  const groupKey = target.dataset.groupKey as GroupKey | undefined
+  if (!groupKey || groupKey !== draggingGroupKey.value) return
+  touchDropPhotoId.value = target.dataset.photoId ?? null
+}
+
+async function onPointerUp(event: PointerEvent, groupKey: GroupKey, photoId: string) {
+  clearLongPressTimer()
+  if (!touchDragging.value || event.pointerType !== 'touch') return
+  event.preventDefault()
+  await onDrop(groupKey, touchDropPhotoId.value || photoId)
+}
+
+function clearLongPressTimer() {
+  if (touchLongPressTimer.value) {
+    window.clearTimeout(touchLongPressTimer.value)
+    touchLongPressTimer.value = null
+  }
+}
+
+function cancelPointerDrag() {
+  clearLongPressTimer()
   draggingPhotoId.value = null
   draggingGroupKey.value = null
+  touchDropPhotoId.value = null
+  touchDragging.value = false
 }
 
 function formatDateTime(value: string) {
@@ -621,10 +696,13 @@ function formatDateTime(value: string) {
   color: var(--text-sub);
 }
 
+.section-copy--hint {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
 .back-btn,
 .secondary-btn,
-.sort-btn,
-.edit-btn,
 .close-btn,
 .size-btn {
   min-height: 38px;
@@ -877,11 +955,24 @@ function formatDateTime(value: string) {
   background: var(--bg-surface);
   border: 1px solid var(--border-faint);
   cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .photo-card--selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(255, 122, 26, 0.22);
+}
+
+.photo-card--dragging {
+  opacity: 0.82;
+  transform: scale(0.98);
+  box-shadow: 0 0 0 2px rgba(30, 90, 174, 0.2);
+}
+
+.photo-card--drop-target {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(30, 90, 174, 0.22);
 }
 
 .photo-thumb-wrap {
@@ -903,10 +994,16 @@ function formatDateTime(value: string) {
   gap: 6px;
 }
 
-.photo-status,
+.photo-overlay-left,
+.photo-overlay-right {
+  display: flex;
+  gap: 6px;
+}
+
 .cover-badge,
 .photo-tag,
-.check-badge {
+.check-badge,
+.drag-badge {
   width: fit-content;
   padding: 4px 7px;
   border-radius: 999px;
@@ -914,18 +1011,15 @@ function formatDateTime(value: string) {
   font-weight: 700;
 }
 
-.photo-status {
-  background: rgba(15, 23, 32, 0.72);
-  color: #fff;
-}
-
-.photo-status.public {
-  background: rgba(84, 176, 125, 0.92);
-}
-
 .check-badge {
   background: rgba(15, 23, 32, 0.72);
   color: #fff;
+}
+
+.drag-badge {
+  background: rgba(15, 23, 32, 0.72);
+  color: #fff;
+  letter-spacing: 0.06em;
 }
 
 .cover-badge {
@@ -968,37 +1062,18 @@ function formatDateTime(value: string) {
   display: none;
 }
 
-.photo-actions {
+.photo-switch-row {
   margin-top: 6px;
-  justify-content: flex-start;
-  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.mini-toggle {
-  min-height: 30px;
-  padding: 0 10px;
-  border: none;
-  border-radius: 999px;
-  background: var(--bg-input);
-  color: var(--text-muted);
+.photo-status-text {
   font-size: 11px;
   font-weight: 700;
-  cursor: pointer;
-}
-
-.mini-toggle.on {
-  background: var(--success-bg);
-  color: var(--success);
-}
-
-.sort-btn {
-  width: 32px;
-  min-width: 32px;
-  padding: 0;
-}
-
-.edit-btn {
-  color: var(--accent);
+  color: var(--text-muted);
 }
 
 .bulk-bar {
@@ -1041,6 +1116,16 @@ function formatDateTime(value: string) {
 
 .modal-card--narrow {
   width: min(100%, 420px);
+}
+
+.modal-head {
+  position: sticky;
+  top: -16px;
+  z-index: 2;
+  margin: -16px -16px 0;
+  padding: calc(12px + env(safe-area-inset-top)) 16px 10px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
 }
 
 .modal-title {
@@ -1091,6 +1176,21 @@ function formatDateTime(value: string) {
   padding: 12px;
 }
 
+.toggle-switch--mini {
+  width: 44px;
+  height: 26px;
+  padding: 3px;
+}
+
+.toggle-switch--mini .toggle-thumb {
+  width: 20px;
+  height: 20px;
+}
+
+.toggle-switch--mini.on .toggle-thumb {
+  transform: translateX(18px);
+}
+
 @media (min-width: 900px) {
   .photo-grid--large {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1119,6 +1219,49 @@ function formatDateTime(value: string) {
 
   .pending-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .tag-chip {
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .modal-card {
+    max-height: calc(100vh - 12px);
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .modal-head {
+    top: -12px;
+    margin: -12px -12px 0;
+    padding: calc(10px + env(safe-area-inset-top)) 12px 8px;
+  }
+
+  .modal-title {
+    font-size: 16px;
+  }
+
+  .close-btn,
+  .secondary-btn,
+  .upload-btn,
+  .danger-btn {
+    min-height: 36px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+
+  .field-input,
+  .field-textarea {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .modal-image {
+    border-radius: 12px;
   }
 }
 </style>
