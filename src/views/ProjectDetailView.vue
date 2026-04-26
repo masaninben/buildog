@@ -15,33 +15,6 @@
     <div v-else-if="!project" class="state-card">案件が見つかりません</div>
 
     <template v-else-if="project">
-      <section class="summary-grid">
-        <div class="summary-card">
-          <span class="summary-label">公開設定</span>
-          <div class="summary-row">
-            <span>{{ project.isPublic ? '顧客に公開中' : '内部のみ' }}</span>
-            <button class="toggle-switch" :class="{ on: project.isPublic }" @click="toggleProjectPublic">
-              <span class="toggle-thumb" />
-            </button>
-          </div>
-        </div>
-
-        <div class="summary-card">
-          <span class="summary-label">写真枚数</span>
-          <span class="summary-value">{{ photos.length }}枚</span>
-        </div>
-
-        <div class="summary-card summary-card--wide">
-          <span class="summary-label">共有導線</span>
-          <div class="summary-actions">
-            <button class="secondary-btn" @click="copyPublicUrl">公開URLをコピー</button>
-            <button class="secondary-btn secondary-btn--accent" @click="previewPublicPage">公開ページをプレビュー</button>
-            <button class="secondary-btn secondary-btn--accent" @click="openQrModal">QR共有</button>
-          </div>
-          <code class="share-url">{{ publicUrl }}</code>
-        </div>
-      </section>
-
       <section class="upload-card">
         <div class="section-head">
           <div>
@@ -68,8 +41,31 @@
                   :class="{ active: uploadTag === tag.value }"
                   @click="uploadTag = tag.value"
                 >
+                  <span class="chip-dot" :style="{ background: tagColors[tag.value] }" />
                   {{ tag.label }}
                 </button>
+              </div>
+            </div>
+
+            <div class="tag-color-section">
+              <button class="tag-color-toggle" type="button" @click="showColorEditor = !showColorEditor">
+                <span class="tag-color-toggle-dots">
+                  <span v-for="tag in tagOptions" :key="tag.value" class="mini-dot" :style="{ background: tagColors[tag.value] }" />
+                </span>
+                タグカラー設定 {{ showColorEditor ? '▲' : '▼' }}
+              </button>
+              <div v-if="showColorEditor" class="tag-color-rows">
+                <div v-for="tag in tagOptions" :key="tag.value" class="tag-color-row">
+                  <span class="chip-dot" :style="{ background: tagColors[tag.value] }" />
+                  <span class="tag-color-label">{{ tag.label }}</span>
+                  <input
+                    type="color"
+                    class="color-input"
+                    :value="tagColors[tag.value]"
+                    @input="setTagColor(tag.value, ($event.target as HTMLInputElement).value)"
+                  />
+                  <button class="tag-color-reset" type="button" @click="resetTagColor(tag.value)">リセット</button>
+                </div>
               </div>
             </div>
 
@@ -148,6 +144,39 @@
           </div>
         </div>
 
+        <!-- マスコット代表画像 -->
+        <div class="mascot-cover-row">
+          <span class="field-label">マスコットを代表画像に</span>
+          <div class="mascot-cover-options">
+            <button
+              class="mascot-cover-btn"
+              :class="{ 'mascot-cover-btn--active': project.coverPhotoUrl === '/brand/buildog-helmet-mascot.png' && !project.coverPhotoId }"
+              type="button"
+              @click="setMascotCover('/brand/buildog-helmet-mascot.png')"
+            >
+              <img src="/brand/buildog-helmet-mascot.png" alt="ヘルメット" class="mascot-thumb" />
+              <span class="mascot-label">ヘルメット</span>
+            </button>
+            <button
+              class="mascot-cover-btn"
+              :class="{ 'mascot-cover-btn--active': project.coverPhotoUrl === '/brand/normal.png' && !project.coverPhotoId }"
+              type="button"
+              @click="setMascotCover('/brand/normal.png')"
+            >
+              <img src="/brand/normal.png" alt="ノーマル" class="mascot-thumb" />
+              <span class="mascot-label">ノーマル</span>
+            </button>
+            <button
+              v-if="project.coverPhotoUrl && !project.coverPhotoId"
+              class="mascot-cover-btn mascot-cover-btn--clear"
+              type="button"
+              @click="setMascotCover('')"
+            >
+              解除
+            </button>
+          </div>
+        </div>
+
         <div v-if="photos.length === 0" class="timeline-empty">まだ写真がありません</div>
 
         <div v-else class="group-stack">
@@ -184,7 +213,6 @@
               >
                 <div class="photo-thumb-wrap">
                   <img :src="photo.url" class="photo-image" />
-                  <!-- 上部: ドラッグ / 選択 / 代表 -->
                   <div class="photo-overlay">
                     <div class="photo-overlay-left">
                       <label v-if="selectionMode" class="check-badge" @click.stop>
@@ -196,25 +224,51 @@
                       <span v-if="project.coverPhotoId === photo.id" class="cover-badge">代表</span>
                     </div>
                   </div>
-                  <!-- 下部: タグ色 + メモ有 + 公開トグル -->
-                  <div class="photo-bottom-overlay" @click.stop>
-                    <span class="tag-dot" :class="`tag-dot--${photo.tag}`" :title="PROJECT_PHOTO_TAG_LABELS[photo.tag]" />
-                    <div class="photo-bottom-right">
-                      <span v-if="photo.memo" class="memo-dot" title="メモあり" />
-                      <button
-                        class="toggle-switch toggle-switch--nano"
-                        :class="{ on: photo.isPublic }"
-                        type="button"
-                        @click="togglePhotoPublic(photo)"
-                      >
-                        <span class="toggle-thumb" />
-                      </button>
-                    </div>
+                </div>
+                <div class="photo-card-foot" @click.stop>
+                  <span class="tag-dot" :style="{ background: tagColors[photo.tag] }" :title="PROJECT_PHOTO_TAG_LABELS[photo.tag]" />
+                  <div class="photo-foot-right">
+                    <span v-if="photo.memo" class="memo-dot" title="メモあり" />
+                    <button
+                      class="toggle-switch toggle-switch--nano"
+                      :class="{ on: photo.isPublic }"
+                      type="button"
+                      @click="togglePhotoPublic(photo)"
+                    >
+                      <span class="toggle-thumb" />
+                    </button>
                   </div>
                 </div>
               </article>
             </div>
           </section>
+        </div>
+      </section>
+
+      <section class="summary-grid">
+        <div class="summary-card">
+          <span class="summary-label">公開設定</span>
+          <div class="summary-row">
+            <span>{{ project.isPublic ? '顧客に公開中' : '内部のみ' }}</span>
+            <button class="toggle-switch" :class="{ on: project.isPublic }" @click="toggleProjectPublic">
+              <span class="toggle-thumb" />
+            </button>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <span class="summary-label">写真枚数</span>
+          <span class="summary-value">{{ photos.length }}枚</span>
+        </div>
+
+        <div class="summary-card summary-card--wide">
+          <span class="summary-label">共有導線</span>
+          <div class="summary-actions">
+            <button class="secondary-btn" @click="copyPublicUrl">公開URLをコピー</button>
+            <button class="secondary-btn secondary-btn--accent" @click="previewPublicPage">公開ページをプレビュー</button>
+            <button class="secondary-btn secondary-btn--accent" @click="openQrModal">QR共有</button>
+          </div>
+          <code class="share-url">{{ publicUrl }}</code>
         </div>
       </section>
     </template>
@@ -343,6 +397,7 @@ const touchDragging = ref(false)
 
 const showQrModal = ref(false)
 const qrDataUrl = ref('')
+const showColorEditor = ref(false)
 
 const sizeOptions: { value: CardSize; label: string }[] = [
   { value: 'small', label: '小' },
@@ -354,6 +409,35 @@ const tagOptions = Object.entries(PROJECT_PHOTO_TAG_LABELS).map(([value, label])
   value: value as ProjectPhotoTag,
   label,
 }))
+
+const TAG_COLORS_KEY = 'buildog_tag_colors'
+const defaultTagColors: Record<ProjectPhotoTag, string> = {
+  before: '#ff7a1a',
+  during: '#3a8ef6',
+  material: '#4ab87a',
+  after: '#a463f2',
+  untagged: '#888888',
+}
+
+function loadTagColors(): Record<ProjectPhotoTag, string> {
+  try {
+    const stored = localStorage.getItem(TAG_COLORS_KEY)
+    return stored ? { ...defaultTagColors, ...JSON.parse(stored) } : { ...defaultTagColors }
+  } catch {
+    return { ...defaultTagColors }
+  }
+}
+
+const tagColors = ref<Record<ProjectPhotoTag, string>>(loadTagColors())
+
+function setTagColor(tag: ProjectPhotoTag, color: string) {
+  tagColors.value = { ...tagColors.value, [tag]: color }
+  localStorage.setItem(TAG_COLORS_KEY, JSON.stringify(tagColors.value))
+}
+
+function resetTagColor(tag: ProjectPhotoTag) {
+  setTagColor(tag, defaultTagColors[tag])
+}
 
 const publicUrl = computed(() => {
   const slug = project.value?.publicSlug || projectId.value
@@ -509,6 +593,10 @@ async function deleteEditingPhoto() {
   if (!ok) return
   await projectStore.deletePhoto(projectId.value, editingPhoto.value.id)
   closePhotoModal()
+}
+
+async function setMascotCover(url: string) {
+  await projectStore.setCustomCover(projectId.value, url)
 }
 
 async function copyPublicUrl() {
@@ -1200,19 +1288,16 @@ function formatDateTime(value: string) {
   transform: translateX(18px);
 }
 
-/* 写真カード下部オーバーレイ */
-.photo-bottom-overlay {
-  position: absolute;
-  inset: auto 0 0 0;
-  padding: 6px 7px 6px 7px;
+/* 写真カード下部フッター（写真の外側） */
+.photo-card-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(transparent, rgba(10, 15, 25, 0.72));
-  border-radius: 0 0 13px 13px;
+  padding: 5px 8px;
+  height: 30px;
 }
 
-.photo-bottom-right {
+.photo-foot-right {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -1221,19 +1306,23 @@ function formatDateTime(value: string) {
 /* タグドット */
 .tag-dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
   flex-shrink: 0;
 }
 
-.tag-dot--before    { background: #ff7a1a; }
-.tag-dot--during    { background: #3a8ef6; }
-.tag-dot--material  { background: #4ab87a; }
-.tag-dot--after     { background: #a463f2; }
-.tag-dot--unset,
-.tag-dot--untagged  { background: #888; }
+/* チップ内ドット */
+.chip-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-right: 2px;
+  vertical-align: middle;
+}
 
 /* メモありインジケータ */
 .memo-dot {
@@ -1245,7 +1334,7 @@ function formatDateTime(value: string) {
   flex-shrink: 0;
 }
 
-/* ナノサイズトグル (写真カード上) */
+/* ナノサイズトグル (写真カードフッター) */
 .toggle-switch--nano {
   width: 34px;
   height: 19px;
@@ -1274,6 +1363,143 @@ function formatDateTime(value: string) {
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* タグカラー設定 */
+.tag-color-section {
+  display: grid;
+  gap: 10px;
+}
+
+.tag-color-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.tag-color-toggle-dots {
+  display: flex;
+  gap: 3px;
+}
+
+.mini-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.tag-color-rows {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+}
+
+.tag-color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tag-color-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.color-input {
+  width: 36px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-input);
+  cursor: pointer;
+}
+
+.tag-color-reset {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* マスコット代表画像 */
+.mascot-cover-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+}
+
+.mascot-cover-options {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.mascot-cover-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.mascot-cover-btn--active {
+  border-color: var(--accent);
+}
+
+.mascot-cover-btn--clear {
+  height: 32px;
+  padding: 0 12px;
+  flex-direction: row;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-style: dashed;
+}
+
+.mascot-thumb {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+
+.mascot-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
 }
 
 @media (min-width: 900px) {

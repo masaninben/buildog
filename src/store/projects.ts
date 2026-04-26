@@ -345,6 +345,18 @@ export const projectStore = {
     })
   },
 
+  async setCustomCover(projectId: string, url: string) {
+    const uid = authState.user?.uid
+    if (!uid) return
+    const project = state.projects.find((entry) => entry.id === projectId)
+    if (!project || project.ownerId !== uid) return
+    await updateDoc(projectRef(projectId), {
+      coverPhotoId: '',
+      coverPhotoUrl: url,
+      updatedAt: serverTimestamp(),
+    })
+  },
+
   async deletePhoto(projectId: string, photoId: string) {
     const uid = authState.user?.uid
     if (!uid) return

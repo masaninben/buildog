@@ -71,11 +71,11 @@ watch(() => authState.user, (user) => {
 }
 
 [data-theme="dark"] {
-  --bg: #0f1c31;
-  --bg-surface: #18263d;
-  --bg-card: #15243a;
-  --bg-hover: #1d3050;
-  --bg-input: #102038;
+  --bg: #080e1c;
+  --bg-surface: #101a2e;
+  --bg-card: #1a2b42;
+  --bg-hover: #1f3354;
+  --bg-input: #0e1a2f;
   --bg-subtle: rgba(255, 255, 255, 0.06);
 
   --border: rgba(255, 255, 255, 0.12);
