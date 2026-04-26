@@ -54,8 +54,8 @@ async function handleSignIn() {
 .login-view {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(255, 122, 26, 0.18), transparent 36%),
-    radial-gradient(circle at bottom right, rgba(76, 122, 156, 0.16), transparent 34%),
+    radial-gradient(circle at top left, rgba(215, 154, 74, 0.2), transparent 30%),
+    radial-gradient(circle at top right, rgba(30, 90, 174, 0.16), transparent 34%),
     var(--bg);
   display: flex;
   align-items: center;
@@ -71,8 +71,10 @@ async function handleSignIn() {
   width: min(100%, 560px);
   padding: 36px;
   border-radius: 28px;
-  background: linear-gradient(180deg, rgba(14, 23, 31, 0.92), rgba(14, 23, 31, 0.98));
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(215, 154, 74, 0.18), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(243, 247, 252, 0.98));
+  border: 1px solid rgba(30, 90, 174, 0.12);
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
@@ -102,7 +104,7 @@ async function handleSignIn() {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(15, 23, 32, 0.86);
+  background: rgba(21, 55, 104, 0.92);
   color: #fff;
   font-size: 12px;
   font-weight: 800;
@@ -120,8 +122,8 @@ async function handleSignIn() {
   width: fit-content;
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(255, 122, 26, 0.14);
-  color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent-strong);
   font-size: 12px;
   font-weight: 700;
 }
@@ -148,8 +150,8 @@ async function handleSignIn() {
 .hero-points li {
   padding: 12px 14px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
 }
 
 .google-btn {

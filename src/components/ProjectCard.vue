@@ -47,8 +47,8 @@ function formatDate(value: string) {
 <style scoped>
 .project-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-faint);
-  border-radius: 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
   overflow: hidden;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
@@ -64,8 +64,8 @@ function formatDate(value: string) {
 .cover-wrap {
   width: 100%;
   background:
-    linear-gradient(135deg, rgba(255, 122, 26, 0.14), rgba(255, 255, 255, 0) 55%),
-    linear-gradient(180deg, rgba(18, 26, 34, 0.85), rgba(18, 26, 34, 0.95));
+    radial-gradient(circle at top right, rgba(215, 154, 74, 0.28), transparent 28%),
+    linear-gradient(160deg, rgba(30, 90, 174, 0.98), rgba(21, 55, 104, 0.98));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -93,7 +93,7 @@ function formatDate(value: string) {
   width: fit-content;
   padding: 5px 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -125,8 +125,8 @@ function formatDate(value: string) {
 }
 
 .card-status.shared {
-  background: rgba(255, 122, 26, 0.14);
-  color: var(--accent);
+  background: var(--warm-bg);
+  color: var(--accent-strong);
 }
 
 .card-meta {

@@ -85,11 +85,13 @@ function formatDateTime(value: string) {
 <style scoped>
 .public-project-view {
   min-height: 100vh;
-  background: linear-gradient(180deg, rgba(255, 122, 26, 0.06), transparent 220px), var(--bg);
+  background:
+    linear-gradient(180deg, rgba(30, 90, 174, 0.14), rgba(30, 90, 174, 0.04) 220px, transparent 320px),
+    var(--bg);
 }
 
 .pub-header {
-  padding: 24px 16px 10px;
+  padding: 26px 16px 14px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -97,7 +99,7 @@ function formatDateTime(value: string) {
 }
 
 .pub-badge {
-  color: var(--accent);
+  color: var(--accent-strong);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -122,10 +124,12 @@ function formatDateTime(value: string) {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  border: 1px solid var(--border);
-  color: var(--accent);
+  border: 1px solid rgba(30, 90, 174, 0.18);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--accent-strong);
   text-decoration: none;
   font-weight: 700;
+  box-shadow: var(--shadow-sm);
 }
 
 .pub-body {
@@ -139,7 +143,7 @@ function formatDateTime(value: string) {
 .state-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 24px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -196,10 +200,10 @@ function formatDateTime(value: string) {
 }
 
 .photo-card {
-  border-radius: 16px;
+  border-radius: 18px;
   overflow: hidden;
   background: var(--bg-surface);
-  border: 1px solid var(--border-faint);
+  border: 1px solid var(--border);
 }
 
 .photo-image {
@@ -231,8 +235,8 @@ function formatDateTime(value: string) {
   width: fit-content;
   padding: 5px 9px;
   border-radius: 999px;
-  background: var(--accent-bg);
-  color: var(--accent);
+  background: var(--warm-bg);
+  color: var(--accent-strong);
   font-size: 11px;
   font-weight: 700;
 }

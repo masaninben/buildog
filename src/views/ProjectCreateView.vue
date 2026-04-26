@@ -64,6 +64,9 @@ async function submit() {
 .project-create-view {
   min-height: 100vh;
   padding: 24px 20px 40px;
+  background:
+    linear-gradient(180deg, rgba(30, 90, 174, 0.08), transparent 180px),
+    var(--bg);
 }
 
 .page-head {
@@ -74,7 +77,7 @@ async function submit() {
 }
 
 .page-eyebrow {
-  color: var(--accent);
+  color: var(--accent-strong);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -90,16 +93,17 @@ async function submit() {
   width: 42px;
   height: 42px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--bg-card);
-  color: var(--accent);
+  color: var(--accent-strong);
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
 .form-card {
   max-width: 760px;
-  padding: 22px;
-  border-radius: 22px;
+  padding: 24px;
+  border-radius: 24px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
@@ -115,6 +119,7 @@ async function submit() {
 .field-label {
   font-size: 13px;
   font-weight: 700;
+  color: var(--accent-strong);
 }
 
 .field-input,
@@ -126,6 +131,7 @@ async function submit() {
   color: var(--text);
   padding: 14px;
   outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .field-input::placeholder,
@@ -143,5 +149,6 @@ async function submit() {
   color: #fff;
   font-weight: 800;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 </style>

@@ -127,16 +127,22 @@ async function compressImage(file: File): Promise<File> {
 .photo-upload {
   display: grid;
   gap: 12px;
-  padding: 18px;
-  border: 1.5px dashed var(--border);
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255, 122, 26, 0.04), transparent), var(--bg-surface);
+  padding: 22px;
+  border: 1.5px dashed rgba(30, 90, 174, 0.28);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(215, 154, 74, 0.14), transparent 24%),
+    linear-gradient(180deg, rgba(30, 90, 174, 0.03), transparent),
+    var(--bg-surface);
   transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
 
 .photo-upload--dragging {
   border-color: var(--accent);
-  background: linear-gradient(180deg, rgba(255, 122, 26, 0.12), transparent), var(--bg-surface);
+  background:
+    radial-gradient(circle at top right, rgba(215, 154, 74, 0.22), transparent 26%),
+    linear-gradient(180deg, rgba(30, 90, 174, 0.12), transparent),
+    var(--bg-surface);
   transform: scale(1.01);
 }
 
@@ -159,8 +165,8 @@ async function compressImage(file: File): Promise<File> {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent-bg);
-  color: var(--accent);
+  background: var(--accent);
+  color: #fff;
   font-size: 28px;
   font-weight: 600;
 }
@@ -204,7 +210,7 @@ async function compressImage(file: File): Promise<File> {
 }
 
 .notice-text {
-  color: var(--accent);
+  color: var(--accent-strong);
   font-weight: 700;
 }
 </style>

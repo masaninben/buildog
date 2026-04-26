@@ -570,6 +570,9 @@ function formatDateTime(value: string) {
   padding: 16px 16px 92px;
   display: grid;
   gap: 16px;
+  background:
+    linear-gradient(180deg, rgba(30, 90, 174, 0.08), transparent 180px),
+    var(--bg);
 }
 
 .page-head,
@@ -596,7 +599,7 @@ function formatDateTime(value: string) {
 .page-head-main { flex: 1; }
 
 .page-eyebrow {
-  color: var(--accent);
+  color: var(--accent-strong);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -625,15 +628,16 @@ function formatDateTime(value: string) {
 .close-btn,
 .size-btn {
   min-height: 38px;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text);
   padding: 0 14px;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
-.secondary-btn--accent { color: var(--accent); }
+.secondary-btn--accent { color: var(--accent-strong); }
 
 .state-card,
 .summary-card,
@@ -643,7 +647,7 @@ function formatDateTime(value: string) {
 .bulk-bar {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 24px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -660,6 +664,9 @@ function formatDateTime(value: string) {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  background:
+    linear-gradient(180deg, rgba(30, 90, 174, 0.03), transparent),
+    var(--bg-card);
 }
 
 .summary-label,
@@ -695,7 +702,7 @@ function formatDateTime(value: string) {
   height: 32px;
   border: none;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(30, 90, 174, 0.16);
   padding: 4px;
   cursor: pointer;
 }
@@ -745,8 +752,8 @@ function formatDateTime(value: string) {
 }
 
 .tag-chip.active {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--warm);
+  border-color: var(--warm);
   color: #fff;
 }
 

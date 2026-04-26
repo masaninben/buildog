@@ -30,30 +30,75 @@ watch(() => authState.user, (user) => {
 
 <style>
 :root {
-  --bg: #0f1720;
-  --bg-surface: #16202b;
-  --bg-card: #1c2733;
-  --bg-hover: #223140;
-  --bg-input: #111b25;
-  --bg-subtle: rgba(255, 255, 255, 0.05);
+  --bg: #f3f6fb;
+  --bg-surface: #edf3f8;
+  --bg-card: #ffffff;
+  --bg-hover: #f7fafe;
+  --bg-input: #f8fbff;
+  --bg-subtle: rgba(27, 49, 92, 0.05);
+
+  --border: rgba(24, 49, 91, 0.12);
+  --border-subtle: rgba(24, 49, 91, 0.08);
+  --border-faint: rgba(24, 49, 91, 0.06);
+  --border-accent: rgba(30, 90, 174, 0.24);
+
+  --text: #132748;
+  --text-sub: rgba(19, 39, 72, 0.72);
+  --text-muted: rgba(19, 39, 72, 0.52);
+  --text-faint: rgba(19, 39, 72, 0.34);
+  --text-placeholder: rgba(19, 39, 72, 0.26);
+
+  --accent: #1e5aae;
+  --accent-hover: #184a8f;
+  --accent-bg: rgba(30, 90, 174, 0.1);
+  --accent-strong: #153768;
+  --warm: #d79a4a;
+  --warm-bg: rgba(215, 154, 74, 0.14);
+  --warm-border: rgba(215, 154, 74, 0.24);
+
+  --toolbar-bg: linear-gradient(90deg, rgba(30, 90, 174, 0.96), rgba(21, 55, 104, 0.96));
+  --toolbar-border: rgba(255, 255, 255, 0.18);
+
+  --success: #2f8f61;
+  --success-bg: rgba(47, 143, 97, 0.12);
+  --danger: #c65b55;
+  --danger-bg: rgba(198, 91, 85, 0.12);
+  --overlay: rgba(11, 26, 50, 0.52);
+
+  --shadow-sm: 0 10px 24px rgba(19, 39, 72, 0.08);
+  --shadow-md: 0 18px 40px rgba(19, 39, 72, 0.12);
+  --shadow-lg: 0 34px 88px rgba(19, 39, 72, 0.16);
+}
+
+[data-theme="dark"] {
+  --bg: #0f1c31;
+  --bg-surface: #18263d;
+  --bg-card: #15243a;
+  --bg-hover: #1d3050;
+  --bg-input: #102038;
+  --bg-subtle: rgba(255, 255, 255, 0.06);
 
   --border: rgba(255, 255, 255, 0.12);
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-faint: rgba(255, 255, 255, 0.05);
-  --border-accent: rgba(255, 122, 26, 0.28);
+  --border-accent: rgba(215, 154, 74, 0.32);
 
-  --text: #eef4f8;
-  --text-sub: rgba(238, 244, 248, 0.74);
-  --text-muted: rgba(238, 244, 248, 0.5);
-  --text-faint: rgba(238, 244, 248, 0.34);
-  --text-placeholder: rgba(238, 244, 248, 0.24);
+  --text: #edf4ff;
+  --text-sub: rgba(237, 244, 255, 0.74);
+  --text-muted: rgba(237, 244, 255, 0.54);
+  --text-faint: rgba(237, 244, 255, 0.34);
+  --text-placeholder: rgba(237, 244, 255, 0.22);
 
-  --accent: #ff7a1a;
-  --accent-hover: #ff8c39;
-  --accent-bg: rgba(255, 122, 26, 0.12);
+  --accent: #77a8f2;
+  --accent-hover: #93bbf7;
+  --accent-bg: rgba(119, 168, 242, 0.16);
+  --accent-strong: #dceaff;
+  --warm: #d79a4a;
+  --warm-bg: rgba(215, 154, 74, 0.16);
+  --warm-border: rgba(215, 154, 74, 0.26);
 
-  --toolbar-bg: rgba(15, 23, 32, 0.88);
-  --toolbar-border: rgba(255, 122, 26, 0.12);
+  --toolbar-bg: linear-gradient(90deg, rgba(16, 32, 56, 0.96), rgba(29, 48, 80, 0.96));
+  --toolbar-border: rgba(255, 255, 255, 0.08);
 
   --success: #54b07d;
   --success-bg: rgba(84, 176, 125, 0.12);
@@ -61,46 +106,9 @@ watch(() => authState.user, (user) => {
   --danger-bg: rgba(223, 114, 104, 0.14);
   --overlay: rgba(6, 12, 18, 0.72);
 
-  --shadow-sm: 0 6px 20px rgba(0, 0, 0, 0.24);
-  --shadow-md: 0 18px 40px rgba(0, 0, 0, 0.28);
-  --shadow-lg: 0 30px 90px rgba(0, 0, 0, 0.35);
-}
-
-[data-theme="light"] {
-  --bg: #f3f5f6;
-  --bg-surface: #e8edf1;
-  --bg-card: #ffffff;
-  --bg-hover: #f6f8fa;
-  --bg-input: #ffffff;
-  --bg-subtle: rgba(17, 27, 37, 0.04);
-
-  --border: rgba(17, 27, 37, 0.12);
-  --border-subtle: rgba(17, 27, 37, 0.08);
-  --border-faint: rgba(17, 27, 37, 0.05);
-  --border-accent: rgba(255, 122, 26, 0.25);
-
-  --text: #16202b;
-  --text-sub: rgba(22, 32, 43, 0.72);
-  --text-muted: rgba(22, 32, 43, 0.5);
-  --text-faint: rgba(22, 32, 43, 0.34);
-  --text-placeholder: rgba(22, 32, 43, 0.24);
-
-  --accent: #d45d00;
-  --accent-hover: #b94f00;
-  --accent-bg: rgba(212, 93, 0, 0.08);
-
-  --toolbar-bg: rgba(243, 245, 246, 0.92);
-  --toolbar-border: rgba(212, 93, 0, 0.1);
-
-  --success: #2f8f61;
-  --success-bg: rgba(47, 143, 97, 0.12);
-  --danger: #c65b55;
-  --danger-bg: rgba(198, 91, 85, 0.12);
-  --overlay: rgba(12, 18, 24, 0.48);
-
-  --shadow-sm: 0 8px 18px rgba(15, 23, 32, 0.08);
-  --shadow-md: 0 18px 34px rgba(15, 23, 32, 0.12);
-  --shadow-lg: 0 28px 70px rgba(15, 23, 32, 0.18);
+  --shadow-sm: 0 8px 22px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 18px 44px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 30px 90px rgba(0, 0, 0, 0.34);
 }
 
 *,
@@ -119,7 +127,10 @@ body,
 
 body {
   font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at top left, rgba(30, 90, 174, 0.08), transparent 30%),
+    radial-gradient(circle at top right, rgba(215, 154, 74, 0.1), transparent 24%),
+    var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }

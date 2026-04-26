@@ -103,6 +103,7 @@ function toggleTheme() {
   background: var(--toolbar-bg);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--toolbar-border);
+  box-shadow: 0 10px 24px rgba(17, 40, 79, 0.16);
 }
 
 .logo-btn {
@@ -125,7 +126,7 @@ function toggleTheme() {
 }
 
 .logo-word {
-  color: var(--text);
+  color: #fff;
   font-size: 20px;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -143,7 +144,7 @@ function toggleTheme() {
   border: none;
   border-radius: 12px;
   background: transparent;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.72);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -155,12 +156,13 @@ function toggleTheme() {
 
 .nav-btn:hover,
 .nav-btn.active {
-  background: var(--accent-bg);
-  color: var(--accent);
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
 }
 
 .nav-btn--add {
-  color: var(--accent);
+  color: #fff;
+  background: rgba(215, 154, 74, 0.22);
 }
 
 .nav-icon {
@@ -181,6 +183,7 @@ function toggleTheme() {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .avatar-img {

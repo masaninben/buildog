@@ -79,11 +79,13 @@ function openProject(project: BuildogProject) {
 <style scoped>
 .project-list-view {
   min-height: 100vh;
-  background: var(--bg);
+  background:
+    linear-gradient(180deg, rgba(30, 90, 174, 0.08), transparent 200px),
+    var(--bg);
 }
 
 .hero {
-  padding: 16px 16px 8px;
+  padding: 18px 16px 10px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -91,7 +93,7 @@ function openProject(project: BuildogProject) {
 }
 
 .hero-eyebrow {
-  color: var(--accent);
+  color: var(--accent-strong);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -100,7 +102,7 @@ function openProject(project: BuildogProject) {
 }
 
 .hero-title {
-  font-size: clamp(20px, 4vw, 26px);
+  font-size: clamp(18px, 4vw, 24px);
   line-height: 1.2;
 }
 
@@ -116,9 +118,10 @@ function openProject(project: BuildogProject) {
   display: flex;
   gap: 4px;
   padding: 4px;
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--bg-card);
   border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
 .size-btn {
@@ -133,8 +136,8 @@ function openProject(project: BuildogProject) {
 }
 
 .size-btn.active {
-  background: var(--accent-bg);
-  color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 .page-body {
@@ -152,7 +155,7 @@ function openProject(project: BuildogProject) {
 
 .state-card,
 .empty-card {
-  border-radius: 20px;
+  border-radius: 24px;
   padding: 28px 20px;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -189,11 +192,12 @@ function openProject(project: BuildogProject) {
   height: 42px;
   padding: 0 16px;
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--accent);
   color: #fff;
   font-weight: 800;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
 @media (min-width: 900px) {
