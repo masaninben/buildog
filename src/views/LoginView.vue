@@ -22,7 +22,7 @@
           <li>顧客はログイン不要で閲覧のみ</li>
         </ul>
 
-        <form class="login-form" @submit.prevent="handleSignIn">
+        <form class="login-form" @submit.prevent="handleEmailSignIn">
           <input
             v-model="email"
             type="email"
@@ -41,9 +41,15 @@
           />
           <p v-if="errorMsg" class="login-error">{{ errorMsg }}</p>
           <button type="submit" class="login-btn" :disabled="loading">
-            {{ loading ? 'ログイン中…' : 'ログイン' }}
+            {{ loading === 'email' ? 'ログイン中…' : 'ログイン' }}
           </button>
         </form>
+
+        <div class="divider"><span>または</span></div>
+
+        <button class="google-btn" :disabled="!!loading" @click="handleGoogleSignIn">
+          {{ loading === 'google' ? 'ログイン中…' : 'Googleでログイン' }}
+        </button>
       </div>
     </section>
   </div>
@@ -52,16 +58,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { signInWithEmail } from '../lib/auth'
+import { signInWithEmail, signInWithGoogle } from '../lib/auth'
 
 const router = useRouter()
-const loading = ref(false)
+const loading = ref<'email' | 'google' | null>(null)
 const email = ref('')
 const password = ref('')
 const errorMsg = ref('')
 
-async function handleSignIn() {
-  loading.value = true
+async function handleEmailSignIn() {
+  loading.value = 'email'
   errorMsg.value = ''
   try {
     await signInWithEmail(email.value, password.value)
@@ -69,7 +75,20 @@ async function handleSignIn() {
   } catch {
     errorMsg.value = 'メールアドレスまたはパスワードが正しくありません'
   } finally {
-    loading.value = false
+    loading.value = null
+  }
+}
+
+async function handleGoogleSignIn() {
+  loading.value = 'google'
+  errorMsg.value = ''
+  try {
+    await signInWithGoogle()
+    router.push({ name: 'project-list' })
+  } catch {
+    errorMsg.value = 'Googleログインに失敗しました'
+  } finally {
+    loading.value = null
   }
 }
 </script>
@@ -211,6 +230,39 @@ async function handleSignIn() {
 }
 
 .login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-sub);
+  font-size: 13px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.google-btn {
+  height: 52px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.google-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
