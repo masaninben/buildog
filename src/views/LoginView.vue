@@ -208,6 +208,38 @@ async function handleGoogleSignIn() {
 <style scoped>
 /* ========== ベース ========== */
 .lp {
+  /* ライトモード固定 — テーマ設定を無視して上書き */
+  --bg: #f3f6fb;
+  --bg-surface: #edf3f8;
+  --bg-card: #ffffff;
+  --bg-hover: #f7fafe;
+  --bg-input: #f8fbff;
+  --bg-subtle: rgba(27, 49, 92, 0.05);
+  --border: rgba(24, 49, 91, 0.12);
+  --border-subtle: rgba(24, 49, 91, 0.08);
+  --border-faint: rgba(24, 49, 91, 0.06);
+  --border-accent: rgba(30, 90, 174, 0.24);
+  --text: #132748;
+  --text-sub: rgba(19, 39, 72, 0.72);
+  --text-muted: rgba(19, 39, 72, 0.52);
+  --text-faint: rgba(19, 39, 72, 0.34);
+  --text-placeholder: rgba(19, 39, 72, 0.26);
+  --accent: #1e5aae;
+  --accent-hover: #184a8f;
+  --accent-bg: rgba(30, 90, 174, 0.1);
+  --accent-strong: #153768;
+  --warm: #d79a4a;
+  --warm-bg: rgba(215, 154, 74, 0.14);
+  --warm-border: rgba(215, 154, 74, 0.24);
+  --success: #2f8f61;
+  --success-bg: rgba(47, 143, 97, 0.12);
+  --danger: #c65b55;
+  --danger-bg: rgba(198, 91, 85, 0.12);
+  --overlay: rgba(11, 26, 50, 0.52);
+  --shadow-sm: 0 10px 24px rgba(19, 39, 72, 0.08);
+  --shadow-md: 0 18px 40px rgba(19, 39, 72, 0.12);
+  --shadow-lg: 0 34px 88px rgba(19, 39, 72, 0.16);
+
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
