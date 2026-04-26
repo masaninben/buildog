@@ -1,46 +1,33 @@
-# Penstok
+# Buildog（ビルドッグ）
 
-所有物を記録し、「手放し方」まで含めて管理するWebアプリです。
+**工事の安心を、写真で残す。**
 
-モノの購入後に発生する「どう処分するか分からない」「面倒で放置する」といった課題を解決することを目的としています。
+リフォーム・建築工事の施工写真を案件ごとに整理し、施主にURL一本で共有するPWA。
 
-**手放す、を設計する。**
-
-## スクリーンショット
-
-棚画面（所有物一覧）
-
-![Penstok](./screenshot.png)
+施工管理ツールではなく「現場の安心を施主に見せるための共有ツール」として設計しています。施主はログイン不要でURLを開くだけで閲覧できます。
 
 ## 主な機能
 
-- **棚管理**: カテゴリ別にアイテムを登録・検索・一覧表示
-- **手放し記録**: 再販売 / 譲渡 / 寄付 / リサイクル / 廃棄 の5種類を記録
-- **手放しアシスト**: フリマ・買取サービスへのリンク、廃棄情報、Penstokユーザーの手放し傾向を表示
-- **所有分布マップ**: 同じ商品の所有者が日本のどこにいるかを地図で可視化
-- **Penstokスコア**: 活動量・継続性・循環貢献・データ貢献の4軸でスコアリング
-- **商品データベース**: バーコードスキャン・外部API（Google Books / 楽天）による自動登録
-- **カスタム画像**: 撮影・白背景合成・背景除去に対応
+- **案件管理**: 案件ごとに施工写真を整理・登録
+- **写真一括アップロード**: 最大10枚・自動圧縮
+- **タグ付け**: ビフォー / 施工中 / 材料 / アフター の4分類
+- **公開・非公開切替**: 写真ごとにトグルで管理
+- **写真並び替え**: ドラッグ＆ドロップ・長押しタッチ対応
+- **代表画像設定**: 案件カードのサムネイルを指定
+- **施主向け公開ページ**: ログイン不要・URLで閲覧
+- **QRコード共有**: その場でQRを表示・コピー
+- **QRコード付きPDF生成**: チラシとして配布可能
+- **ダーク / ライトテーマ切替**
 
 ## 技術スタック
 
 | 領域 | 技術 |
 |---|---|
-| フレームワーク | Vue 3 (Composition API) + TypeScript |
-| ビルド | Vite |
-| バックエンド | Firebase (Authentication / Firestore / Hosting) |
-| 画像ストレージ | Cloudinary |
-| 地図 | Leaflet |
-| バーコード | @zxing/browser |
-| 背景除去 | @imgly/background-removal |
-
-## コンセプト
-
-Penstokは「モノの所有から手放しまで」を一つの流れとして捉え、
-そのデータを蓄積・可視化することを目的としています。
-
-データを「使える形に整える」ことに興味があり、
-その思想をプロダクトとして実装しています。
+| フレームワーク | Vue 3 (Composition API) + TypeScript 5.4 |
+| ビルド | Vite 5.3 |
+| バックエンド | Firebase (Authentication / Firestore / Storage / Hosting) |
+| PDF生成 | jsPDF |
+| QRコード | qrcode |
 
 ## セットアップ
 
@@ -55,20 +42,12 @@ npm install
 `.env.local` を作成して以下を設定する。
 
 ```env
-# Firebase
 VITE_FIREBASE_API_KEY=
 VITE_FIREBASE_AUTH_DOMAIN=
 VITE_FIREBASE_PROJECT_ID=
 VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
-
-# Cloudinary
-VITE_CLOUDINARY_CLOUD_NAME=
-VITE_CLOUDINARY_UPLOAD_PRESET=
-
-# 外部API（任意）
-VITE_RAKUTEN_APP_ID=
 ```
 
 ### 3. Firebase の設定
@@ -100,32 +79,31 @@ firebase deploy --only hosting
 
 ```
 src/
+├── assets/
+│   └── characters/       # マスコットキャラクター画像
 ├── components/
-│   ├── AccountModal.vue      # マイページ・スコア表示
-│   ├── BarcodeScanner.vue    # バーコードスキャナー
-│   ├── DisposalAssist.vue    # 手放しアシスト
-│   ├── GlobalToolbar.vue     # グローバルナビ
-│   ├── OwnershipMap.vue      # 所有分布マップ
-│   ├── PhotoUpload.vue       # 画像撮影・白背景合成・背景除去
-│   └── ShelfCard.vue         # 棚カード
+│   ├── AccountModal.vue  # アカウント情報モーダル
+│   ├── GlobalToolbar.vue # グローバルナビゲーション
+│   ├── PhotoUpload.vue   # 写真アップロード・圧縮
+│   └── ProjectCard.vue   # 案件カード
+├── composables/
+│   └── useTheme.ts       # テーマ管理
 ├── lib/
-│   ├── firebase.ts           # Firebase 初期化
-│   └── auth.ts               # 認証ユーティリティ
-├── router/                   # Vue Router 設定
+│   ├── firebase.ts       # Firebase 初期化
+│   └── auth.ts           # 認証ユーティリティ
+├── router/               # Vue Router 設定
 ├── store/
-│   ├── shelf.ts              # 棚アイテム管理
-│   ├── products.ts           # 商品DBキャッシュ
-│   └── userProfile.ts        # ユーザープロフィール
+│   ├── projects.ts       # 案件・写真データ管理
+│   └── userProfile.ts    # ユーザープロフィール
 ├── types/
-│   └── index.ts              # 型定義
+│   └── index.ts          # 型定義
 ├── views/
-│   ├── ShelfView.vue         # 棚一覧
-│   ├── AddItemView.vue       # アイテム追加
-│   ├── ItemDetailView.vue    # アイテム詳細・手放し
 │   ├── LoginView.vue         # ログイン
-│   ├── AboutView.vue         # サービス紹介
-│   └── admin/               # 管理画面
-└── App.vue                   # ルートコンポーネント・テーマ管理
+│   ├── ProjectListView.vue   # 案件一覧
+│   ├── ProjectCreateView.vue # 案件作成
+│   ├── ProjectDetailView.vue # 案件詳細・写真管理
+│   └── PublicProjectView.vue # 施主向け公開ページ
+└── App.vue               # ルートコンポーネント・テーマ管理
 ```
 
 ## ライセンス
