@@ -60,9 +60,9 @@ type CardSize = 'small' | 'medium' | 'large'
 
 const STORAGE_KEY = 'buildog_project_card_size'
 const sizeOptions: { value: CardSize; label: string }[] = [
-  { value: 'large', label: '大' },
-  { value: 'medium', label: '中' },
   { value: 'small', label: '小' },
+  { value: 'medium', label: '中' },
+  { value: 'large', label: '大' },
 ]
 
 const router = useRouter()

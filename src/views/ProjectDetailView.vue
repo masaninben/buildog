@@ -46,52 +46,57 @@
         <div class="section-head">
           <div>
             <h2 class="section-title">写真をまとめて追加</h2>
-            <p class="section-copy">一度に最大10枚。タグとメモを先に揃えてから追加できます。</p>
+            <p v-if="uploadExpanded" class="section-copy">一度に最大10枚。タグとメモを先に揃えてから追加できます。</p>
           </div>
+          <button class="upload-toggle-btn" type="button" @click="uploadExpanded = !uploadExpanded">
+            {{ uploadExpanded ? '閉じる ▲' : '開く ▼' }}
+          </button>
         </div>
 
-        <PhotoUpload ref="photoUploadRef" :upload-path="`projects/${project.id}`" @select="onFilesSelected" />
+        <template v-if="uploadExpanded">
+          <PhotoUpload ref="photoUploadRef" :upload-path="`projects/${project.id}`" @select="onFilesSelected" />
 
-        <div class="upload-controls">
-          <div>
-            <p class="field-label">まとめて付けるタグ</p>
-            <div class="tag-chips">
-              <button
-                v-for="tag in tagOptions"
-                :key="tag.value"
-                type="button"
-                class="tag-chip"
-                :class="{ active: uploadTag === tag.value }"
-                @click="uploadTag = tag.value"
-              >
-                {{ tag.label }}
-              </button>
+          <div class="upload-controls">
+            <div>
+              <p class="field-label">まとめて付けるタグ</p>
+              <div class="tag-chips">
+                <button
+                  v-for="tag in tagOptions"
+                  :key="tag.value"
+                  type="button"
+                  class="tag-chip"
+                  :class="{ active: uploadTag === tag.value }"
+                  @click="uploadTag = tag.value"
+                >
+                  {{ tag.label }}
+                </button>
+              </div>
+            </div>
+
+            <label class="memo-field">
+              <span class="field-label">まとめて入れるメモ</span>
+              <input v-model="uploadMemo" class="field-input" type="text" placeholder="例）解体前 / 下地施工 / 完成引渡し前" />
+            </label>
+          </div>
+
+          <div v-if="pendingFiles.length > 0" class="pending-wrap">
+            <div class="pending-head">
+              <p class="pending-count">{{ pendingFiles.length }}枚をアップロード待ち</p>
+              <div class="pending-actions">
+                <button class="text-btn" type="button" @click="clearPendingFiles">クリア</button>
+                <button class="upload-btn" type="button" :disabled="uploadingPending" @click="uploadPendingFiles">
+                  {{ uploadingPending ? 'アップロード中…' : `${pendingFiles.length}枚を追加` }}
+                </button>
+              </div>
+            </div>
+
+            <div class="pending-grid">
+              <article v-for="file in pendingFiles" :key="file.id" class="pending-card">
+                <img :src="file.previewUrl" class="pending-image" />
+              </article>
             </div>
           </div>
-
-          <label class="memo-field">
-            <span class="field-label">まとめて入れるメモ</span>
-            <input v-model="uploadMemo" class="field-input" type="text" placeholder="例）解体前 / 下地施工 / 完成引渡し前" />
-          </label>
-        </div>
-
-        <div v-if="pendingFiles.length > 0" class="pending-wrap">
-          <div class="pending-head">
-            <p class="pending-count">{{ pendingFiles.length }}枚をアップロード待ち</p>
-            <div class="pending-actions">
-              <button class="text-btn" type="button" @click="clearPendingFiles">クリア</button>
-              <button class="upload-btn" type="button" :disabled="uploadingPending" @click="uploadPendingFiles">
-                {{ uploadingPending ? 'アップロード中…' : `${pendingFiles.length}枚を追加` }}
-              </button>
-            </div>
-          </div>
-
-          <div class="pending-grid">
-            <article v-for="file in pendingFiles" :key="file.id" class="pending-card">
-              <img :src="file.previewUrl" class="pending-image" />
-            </article>
-          </div>
-        </div>
+        </template>
       </section>
 
       <section class="photos-card">
@@ -173,12 +178,13 @@
                 @drop="onDrop(group.key, photo.id)"
                 @pointerdown="onPointerDown($event, group.key, photo.id)"
                 @pointermove="onPointerMove"
-                @pointerup="onPointerUp(group.key, photo.id)"
+                @pointerup="onPointerUp($event, group.key, photo.id)"
                 @pointercancel="cancelPointerDrag"
                 @click="handlePhotoCardClick(photo)"
               >
                 <div class="photo-thumb-wrap">
                   <img :src="photo.url" class="photo-image" />
+                  <!-- 上部: ドラッグ / 選択 / 代表 -->
                   <div class="photo-overlay">
                     <div class="photo-overlay-left">
                       <label v-if="selectionMode" class="check-badge" @click.stop>
@@ -190,19 +196,20 @@
                       <span v-if="project.coverPhotoId === photo.id" class="cover-badge">代表</span>
                     </div>
                   </div>
-                </div>
-
-                <div class="photo-body">
-                  <div class="photo-meta-row">
-                    <span class="photo-tag">{{ PROJECT_PHOTO_TAG_LABELS[photo.tag] }}</span>
-                    <span class="photo-date">{{ index + 1 }}</span>
-                  </div>
-                  <p v-if="photo.memo" class="photo-caption">{{ photo.memo }}</p>
-                  <div class="photo-switch-row" @click.stop>
-                    <span class="photo-status-text">{{ photo.isPublic ? '公開中' : '非公開' }}</span>
-                    <button class="toggle-switch toggle-switch--mini" :class="{ on: photo.isPublic }" type="button" @click="togglePhotoPublic(photo)">
-                      <span class="toggle-thumb" />
-                    </button>
+                  <!-- 下部: タグ色 + メモ有 + 公開トグル -->
+                  <div class="photo-bottom-overlay" @click.stop>
+                    <span class="tag-dot" :class="`tag-dot--${photo.tag}`" :title="PROJECT_PHOTO_TAG_LABELS[photo.tag]" />
+                    <div class="photo-bottom-right">
+                      <span v-if="photo.memo" class="memo-dot" title="メモあり" />
+                      <button
+                        class="toggle-switch toggle-switch--nano"
+                        :class="{ on: photo.isPublic }"
+                        type="button"
+                        @click="togglePhotoPublic(photo)"
+                      >
+                        <span class="toggle-thumb" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -316,6 +323,7 @@ const uploadMemo = ref('')
 const uploadTag = ref<ProjectPhotoTag>('untagged')
 const pendingFiles = ref<PendingUpload[]>([])
 const uploadingPending = ref(false)
+const uploadExpanded = ref(window.innerWidth >= 1024)
 const photoCardSize = ref<CardSize>((localStorage.getItem(PHOTO_SIZE_STORAGE_KEY) as CardSize | null) ?? 'medium')
 
 const editingPhoto = ref<ProjectPhoto | null>(null)
@@ -549,8 +557,9 @@ async function downloadSharePdf() {
 }
 
 function triggerUploaderFocus() {
+  uploadExpanded.value = true
   window.scrollTo({ top: 0, behavior: 'smooth' })
-  photoUploadRef.value?.openPicker()
+  setTimeout(() => photoUploadRef.value?.openPicker(), 80)
 }
 
 function onDragStart(groupKey: GroupKey, photoId: string) {
@@ -1189,6 +1198,82 @@ function formatDateTime(value: string) {
 
 .toggle-switch--mini.on .toggle-thumb {
   transform: translateX(18px);
+}
+
+/* 写真カード下部オーバーレイ */
+.photo-bottom-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 6px 7px 6px 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(transparent, rgba(10, 15, 25, 0.72));
+  border-radius: 0 0 13px 13px;
+}
+
+.photo-bottom-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* タグドット */
+.tag-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.tag-dot--before    { background: #ff7a1a; }
+.tag-dot--during    { background: #3a8ef6; }
+.tag-dot--material  { background: #4ab87a; }
+.tag-dot--after     { background: #a463f2; }
+.tag-dot--unset,
+.tag-dot--untagged  { background: #888; }
+
+/* メモありインジケータ */
+.memo-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffd166;
+  flex-shrink: 0;
+}
+
+/* ナノサイズトグル (写真カード上) */
+.toggle-switch--nano {
+  width: 34px;
+  height: 19px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.toggle-switch--nano .toggle-thumb {
+  width: 15px;
+  height: 15px;
+}
+
+.toggle-switch--nano.on .toggle-thumb {
+  transform: translateX(15px);
+}
+
+/* アップロードカード開閉ボタン */
+.upload-toggle-btn {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 @media (min-width: 900px) {
