@@ -353,7 +353,9 @@
         </div>
         <div class="modal-actions">
           <button class="secondary-btn" type="button" @click="copyPublicUrl">URLをコピー</button>
-          <button class="upload-btn" type="button" @click="downloadSharePdf">PDFチラシを作成</button>
+          <button class="upload-btn" type="button" :disabled="generatingPdf" @click="downloadSharePdf">
+            {{ generatingPdf ? '生成中…' : 'QRをPDFで共有' }}
+          </button>
         </div>
       </div>
     </div>
@@ -414,6 +416,7 @@ const showQrModal = ref(false)
 const qrDataUrl = ref('')
 const showColorEditor = ref(false)
 const urlCopied = ref(false)
+const generatingPdf = ref(false)
 
 const sizeOptions: { value: CardSize; label: string }[] = [
   { value: 'small', label: '小' },
@@ -650,31 +653,315 @@ function closeQrModal() {
 }
 
 async function downloadSharePdf() {
-  if (!project.value) return
-  if (!qrDataUrl.value) {
-    qrDataUrl.value = await QRCode.toDataURL(publicUrl.value, { width: 360, margin: 1 })
-  }
+  if (!project.value || generatingPdf.value) return
+  generatingPdf.value = true
 
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  pdf.setFillColor(15, 23, 32)
-  pdf.rect(0, 0, 210, 297, 'F')
-  pdf.setTextColor(255, 122, 26)
-  pdf.setFontSize(24)
-  pdf.text('Buildog', 20, 28)
-  pdf.setTextColor(238, 244, 248)
-  pdf.setFontSize(22)
-  pdf.text(project.value.name, 20, 46, { maxWidth: 170 })
-  pdf.setFontSize(14)
-  if (project.value.clientName) {
-    pdf.text(`顧客名: ${project.value.clientName}`, 20, 58)
+  try {
+    const qrSrc = qrDataUrl.value || await QRCode.toDataURL(publicUrl.value, { width: 400, margin: 1 })
+    if (!qrDataUrl.value) qrDataUrl.value = qrSrc
+
+    await document.fonts.ready
+
+    const W = 1240
+    const H = 1754
+    const canvas = document.createElement('canvas')
+    canvas.width = W
+    canvas.height = H
+    const ctx = canvas.getContext('2d')!
+
+    const f = (size: number, weight = '400') =>
+      `${weight} ${size}px "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif`
+
+    const NAVY = '#08162a'
+    const BLUE = '#1e5aae'
+    const ORANGE = '#d79a4a'
+    const TEXT = '#132748'
+    const MUTED = '#5a6b82'
+    const LIGHT_BG = '#eef3fb'
+    const WHITE = '#ffffff'
+    const CREAM = '#f5f8fd'
+
+    const loadImg = (src: string): Promise<HTMLImageElement> => new Promise((res, rej) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => res(img)
+      img.onerror = rej
+      img.src = src
+    })
+
+    const rr = (x: number, y: number, w: number, h: number, r: number) => {
+      ctx.beginPath()
+      ctx.moveTo(x + r, y)
+      ctx.lineTo(x + w - r, y)
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+      ctx.lineTo(x + w, y + h - r)
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+      ctx.lineTo(x + r, y + h)
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+      ctx.lineTo(x, y + r)
+      ctx.quadraticCurveTo(x, y, x + r, y)
+      ctx.closePath()
+    }
+
+    const fitText = (text: string, maxW: number, size: number, weight = '900'): number => {
+      let s = size
+      ctx.font = f(s, weight)
+      while (ctx.measureText(text).width > maxW && s > 22) { s -= 2; ctx.font = f(s, weight) }
+      return s
+    }
+
+    const [mascot, qrImg] = await Promise.all([loadImg('/brand/buildog-helmet-mascot.png'), loadImg(qrSrc)])
+
+    // ── Background ──
+    ctx.fillStyle = CREAM
+    ctx.fillRect(0, 0, W, H)
+
+    // ─────────────────────────────────────
+    // 1. HEADER  0–220
+    // ─────────────────────────────────────
+    const HEADER_H = 220
+    const hGrad = ctx.createLinearGradient(0, 0, W, 0)
+    hGrad.addColorStop(0, '#060f1e')
+    hGrad.addColorStop(1, '#1a4a94')
+    ctx.fillStyle = hGrad
+    ctx.fillRect(0, 0, W, HEADER_H)
+
+    // Orange top strip
+    ctx.fillStyle = ORANGE
+    ctx.fillRect(0, 0, W, 8)
+
+    // Buildog badge (top-right)
+    ctx.fillStyle = ORANGE
+    ctx.font = f(24, '900')
+    ctx.textAlign = 'right'
+    ctx.fillText('Buildog', W - 54, 52)
+    ctx.fillStyle = 'rgba(255,255,255,0.38)'
+    ctx.font = f(16)
+    ctx.fillText('施工写真共有サービス', W - 54, 76)
+    ctx.textAlign = 'left'
+
+    // Sub label
+    ctx.fillStyle = 'rgba(255,255,255,0.48)'
+    ctx.font = f(21, '500')
+    ctx.fillText('施工写真のご報告', 54, 56)
+
+    // Project name (auto-fit)
+    const nameSize = fitText(project.value.name, W - 108 - 220, 60)
+    ctx.fillStyle = WHITE
+    ctx.font = f(nameSize, '900')
+    ctx.fillText(project.value.name, 54, 138)
+
+    // Client / address
+    const subInfo = [project.value.clientName, project.value.siteAddress].filter(Boolean).join('  /  ')
+    if (subInfo) {
+      ctx.fillStyle = 'rgba(255,255,255,0.62)'
+      ctx.font = f(21)
+      const short = subInfo.length > 44 ? subInfo.slice(0, 44) + '…' : subInfo
+      ctx.fillText(short, 54, 188)
+    }
+
+    // ─────────────────────────────────────
+    // 2. PROMO  220–430
+    // ─────────────────────────────────────
+    const PROMO_Y = HEADER_H
+    const PROMO_H = 210
+    ctx.fillStyle = WHITE
+    ctx.fillRect(0, PROMO_Y, W, PROMO_H)
+
+    // Orange left accent
+    ctx.fillStyle = ORANGE
+    ctx.fillRect(54, PROMO_Y + 28, 6, 108)
+
+    ctx.fillStyle = TEXT
+    ctx.font = f(37, '900')
+    ctx.fillText('いつでも・何度でも', 76, PROMO_Y + 78)
+    ctx.fillText('スマホで確認できます', 76, PROMO_Y + 128)
+
+    ctx.fillStyle = MUTED
+    ctx.font = f(20)
+    ctx.fillText('施工の記録を写真でわかりやすくまとめました。', 76, PROMO_Y + 166)
+    ctx.fillText('大切な施工の証拠として、いつでもご覧いただけます。', 76, PROMO_Y + 194)
+
+    // Mascot (overlaps header bottom + promo top)
+    const M = 230
+    ctx.drawImage(mascot, W - M - 36, PROMO_Y - 50, M, M)
+
+    // ─────────────────────────────────────
+    // 3. CTA BAND  430–480
+    // ─────────────────────────────────────
+    const CTA_Y = PROMO_Y + PROMO_H
+    const CTA_H = 50
+    ctx.fillStyle = LIGHT_BG
+    ctx.fillRect(0, CTA_Y, W, CTA_H)
+    ctx.fillStyle = BLUE
+    ctx.font = f(22, '700')
+    ctx.textAlign = 'center'
+    ctx.fillText('▼  QRコードをスマホで読み取ってください  ▼', W / 2, CTA_Y + 34)
+    ctx.textAlign = 'left'
+
+    // ─────────────────────────────────────
+    // 4. QR SECTION  480–870
+    // ─────────────────────────────────────
+    const QR_Y = CTA_Y + CTA_H
+    const QR_SECTION_H = 390
+    ctx.fillStyle = LIGHT_BG
+    ctx.fillRect(0, QR_Y, W, QR_SECTION_H)
+
+    const QR_SIZE = 280
+    const QR_X = (W - QR_SIZE) / 2
+    const QR_IMG_Y = QR_Y + 40
+
+    ctx.save()
+    ctx.shadowColor = 'rgba(30,90,174,0.20)'
+    ctx.shadowBlur = 32
+    ctx.shadowOffsetY = 8
+    rr(QR_X - 28, QR_IMG_Y - 28, QR_SIZE + 56, QR_SIZE + 56, 24)
+    ctx.fillStyle = WHITE
+    ctx.fill()
+    ctx.restore()
+
+    ctx.drawImage(qrImg, QR_X, QR_IMG_Y, QR_SIZE, QR_SIZE)
+
+    ctx.fillStyle = TEXT
+    ctx.font = f(26, '700')
+    ctx.textAlign = 'center'
+    ctx.fillText('スマホのカメラをQRコードに向けるだけ', W / 2, QR_IMG_Y + QR_SIZE + 52)
+    ctx.fillStyle = MUTED
+    ctx.font = f(20)
+    ctx.fillText('インターネット接続があればいつでもアクセス可能です', W / 2, QR_IMG_Y + QR_SIZE + 86)
+    ctx.textAlign = 'left'
+
+    // ─────────────────────────────────────
+    // 5. STEP GUIDE  870–1170
+    // ─────────────────────────────────────
+    const STEPS_Y = QR_Y + QR_SECTION_H
+    const STEPS_H = 300
+    ctx.fillStyle = WHITE
+    ctx.fillRect(0, STEPS_Y, W, STEPS_H)
+
+    ctx.fillStyle = TEXT
+    ctx.font = f(26, '900')
+    ctx.textAlign = 'center'
+    ctx.fillText('QRコードの読み方', W / 2, STEPS_Y + 50)
+    ctx.textAlign = 'left'
+
+    ctx.strokeStyle = 'rgba(30,90,174,0.10)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(100, STEPS_Y + 66)
+    ctx.lineTo(W - 100, STEPS_Y + 66)
+    ctx.stroke()
+
+    const steps = [
+      ['1', 'カメラアプリを起動する', 'スマホの標準カメラアプリを開きます'],
+      ['2', 'QRコードにカメラを向ける', 'QRコードに近づけると自動で認識されます（目安：5〜10cm）'],
+      ['3', '表示されたURLをタップする', 'バナーが表示されたらタップ。施工写真ページが開きます'],
+    ]
+
+    steps.forEach(([num, title, desc], i) => {
+      const sy = STEPS_Y + 94 + i * 66
+      const sx = 94
+
+      ctx.beginPath()
+      ctx.arc(sx, sy + 6, 24, 0, Math.PI * 2)
+      ctx.fillStyle = BLUE
+      ctx.fill()
+
+      ctx.fillStyle = WHITE
+      ctx.font = f(22, '700')
+      ctx.textAlign = 'center'
+      ctx.fillText(num, sx, sy + 14)
+      ctx.textAlign = 'left'
+
+      ctx.fillStyle = TEXT
+      ctx.font = f(23, '700')
+      ctx.fillText(title, sx + 44, sy + 6)
+      ctx.fillStyle = MUTED
+      ctx.font = f(19)
+      ctx.fillText(desc, sx + 44, sy + 32)
+    })
+
+    ctx.fillStyle = MUTED
+    ctx.font = f(17)
+    ctx.fillText('※ iPhone（iOS 11以降）は標準カメラアプリ、AndroidはカメラアプリまたはブラウザのQR読み取りから', 90, STEPS_Y + STEPS_H - 18)
+
+    // ─────────────────────────────────────
+    // 6. URL BOX  1170–1280
+    // ─────────────────────────────────────
+    const URL_Y = STEPS_Y + STEPS_H
+    const URL_H = 110
+    ctx.fillStyle = '#eaeff8'
+    ctx.fillRect(0, URL_Y, W, URL_H)
+
+    ctx.fillStyle = MUTED
+    ctx.font = f(18, '500')
+    ctx.textAlign = 'center'
+    ctx.fillText('ブラウザから直接アクセスする場合', W / 2, URL_Y + 30)
+
+    rr(90, URL_Y + 44, W - 180, 46, 12)
+    ctx.fillStyle = WHITE
+    ctx.fill()
+
+    ctx.fillStyle = BLUE
+    ctx.font = f(19, '700')
+    const urlDisp = publicUrl.value.length > 58 ? publicUrl.value.slice(0, 58) + '…' : publicUrl.value
+    ctx.fillText(urlDisp, W / 2, URL_Y + 74)
+    ctx.textAlign = 'left'
+
+    // ─────────────────────────────────────
+    // 7. FOOTER  1280–1754
+    // ─────────────────────────────────────
+    const FOOTER_Y = URL_Y + URL_H
+    const fGrad = ctx.createLinearGradient(0, FOOTER_Y, 0, H)
+    fGrad.addColorStop(0, '#08162a')
+    fGrad.addColorStop(1, '#0e2450')
+    ctx.fillStyle = fGrad
+    ctx.fillRect(0, FOOTER_Y, W, H - FOOTER_Y)
+
+    // Decorative mascot (ghost)
+    ctx.globalAlpha = 0.12
+    const FM = 380
+    ctx.drawImage(mascot, W - FM - 20, FOOTER_Y + (H - FOOTER_Y - FM) / 2, FM, FM)
+    ctx.globalAlpha = 1
+
+    // Orange divider line
+    ctx.fillStyle = ORANGE
+    ctx.fillRect(54, FOOTER_Y + 12, 60, 4)
+
+    ctx.fillStyle = 'rgba(255,255,255,0.42)'
+    ctx.font = f(19)
+    ctx.fillText('この写真レポートは施工会社よりご提供しています', 54, FOOTER_Y + 60)
+
+    ctx.fillStyle = WHITE
+    ctx.font = f(46, '900')
+    ctx.fillText('施工にお立ち会い', 54, FOOTER_Y + 148)
+    ctx.fillText('いただきありがとうございました。', 54, FOOTER_Y + 210)
+
+    ctx.fillStyle = 'rgba(255,255,255,0.65)'
+    ctx.font = f(21)
+    ctx.fillText('ご不明な点がございましたら、お気軽にお問い合わせください。', 54, FOOTER_Y + 264)
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(54, FOOTER_Y + 296)
+    ctx.lineTo(W - 54, FOOTER_Y + 296)
+    ctx.stroke()
+
+    ctx.fillStyle = ORANGE
+    ctx.font = f(28, '900')
+    ctx.fillText('Buildog', 54, FOOTER_Y + 358)
+    ctx.fillStyle = 'rgba(255,255,255,0.38)'
+    ctx.font = f(17)
+    ctx.fillText('施工写真共有サービス  |  buildog-jp.web.app', 54, FOOTER_Y + 390)
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.94)
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297)
+    pdf.save(`buildog-share-${project.value.name}.pdf`)
+  } finally {
+    generatingPdf.value = false
   }
-  pdf.addImage(qrDataUrl.value, 'PNG', 55, 80, 100, 100)
-  pdf.setFontSize(16)
-  pdf.text('スマホで施工写真をご確認いただけます', 32, 195)
-  pdf.setFontSize(11)
-  pdf.text('QRコードを読み取ると、公開中の施工写真ページが開きます。', 28, 205)
-  pdf.text(publicUrl.value, 20, 225, { maxWidth: 170 })
-  pdf.save(`buildog-share-${project.value.name}.pdf`)
 }
 
 function triggerUploaderFocus() {
