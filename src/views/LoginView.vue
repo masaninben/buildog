@@ -21,7 +21,7 @@
         </div>
         <div class="hero-visual">
           <div class="hero-mascot-card">
-            <img src="/brand/buildog-bulldog-mascot.jpg" alt="Buildogマスコット" class="hero-mascot" />
+            <img src="/brand/buildog-helmet-mascot.png" alt="Buildogマスコット" class="hero-mascot" />
           </div>
         </div>
       </div>
@@ -112,7 +112,7 @@
     <section id="auth" class="auth-section">
       <div class="auth-inner">
         <div class="auth-lead">
-          <img src="/brand/buildog-bulldog-mascot.jpg" alt="" class="auth-mascot" />
+          <img src="/brand/buildog-helmet-mascot.png" alt="" class="auth-mascot" />
           <p class="auth-lead-text">現場の信頼を、写真が守る。</p>
         </div>
         <div class="auth-box">
@@ -330,19 +330,17 @@ async function handleGoogleSignIn() {
 }
 
 .hero-mascot-card {
-  background: #f4f4f4;
   border-radius: 28px;
-  padding: 20px;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.36);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+  width: min(100%, 340px);
+  margin: 0 auto;
 }
 
 .hero-mascot {
-  width: min(100%, 280px);
+  width: 100%;
+  display: block;
   object-fit: cover;
-  border-radius: 8px;
 }
 
 /* ========== セクション共通 ========== */
@@ -491,15 +489,12 @@ async function handleGoogleSignIn() {
 }
 
 .auth-mascot {
-  width: min(100%, 220px);
+  width: min(100%, 200px);
   object-fit: cover;
-  mix-blend-mode: multiply;
-  border-radius: 16px;
-}
-
-[data-theme="dark"] .auth-mascot {
-  mix-blend-mode: luminosity;
-  opacity: 0.88;
+  border-radius: 20px;
+  overflow: hidden;
+  display: block;
+  box-shadow: var(--shadow-md);
 }
 
 .auth-lead-text {
