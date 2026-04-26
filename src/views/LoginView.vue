@@ -330,7 +330,7 @@ async function handleGoogleSignIn() {
 }
 
 .hero-mascot-card {
-  background: #fff;
+  background: #f4f4f4;
   border-radius: 28px;
   padding: 20px;
   box-shadow: 0 24px 64px rgba(0,0,0,0.36);
