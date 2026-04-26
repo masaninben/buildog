@@ -102,78 +102,55 @@
             <p class="section-copy">写真中心で全体像を把握しながら、公開・タグ・並び順をその場で整えられます。</p>
             <p class="section-copy section-copy--hint">写真は長押ししてドラッグすると並び替えできます。</p>
           </div>
-
-          <div class="hero-actions">
-            <button class="secondary-btn" :class="{ 'secondary-btn--accent': selectionMode }" @click="toggleSelectionMode">
-              {{ selectionMode ? '選択終了' : '選択モード' }}
+          <div class="size-switch">
+            <button
+              v-for="option in sizeOptions"
+              :key="option.value"
+              class="size-btn"
+              :class="{ active: photoCardSize === option.value }"
+              @click="setPhotoCardSize(option.value)"
+            >
+              {{ option.label }}
             </button>
-            <div class="size-switch">
+          </div>
+        </div>
+
+        <!-- 選択モード（開閉式） -->
+        <div class="collapsible-panel">
+          <button
+            class="panel-toggle-btn"
+            :class="{ 'panel-toggle-btn--open': selectionMode }"
+            type="button"
+            @click="toggleSelectionMode"
+          >
+            <span class="panel-toggle-label">{{ selectionMode ? '選択モード終了 ▲' : '選択モード ▼' }}</span>
+            <span v-if="selectionMode && selectedPhotoIds.length > 0" class="panel-badge">{{ selectedPhotoIds.length }}枚選択中</span>
+          </button>
+
+          <div v-if="selectionMode" class="bulk-bar">
+            <div class="bulk-head">
+              <strong>{{ selectedPhotoIds.length }}枚選択中</strong>
+              <button class="text-btn" type="button" @click="clearSelectedPhotos">選択解除</button>
+            </div>
+            <div class="bulk-actions">
+              <button class="secondary-btn" type="button" :disabled="selectedPhotoIds.length === 0" @click="bulkSetVisibility(true)">まとめて公開</button>
+              <button class="secondary-btn" type="button" :disabled="selectedPhotoIds.length === 0" @click="bulkSetVisibility(false)">まとめて非公開</button>
+              <button class="danger-btn" type="button" :disabled="selectedPhotoIds.length === 0" @click="bulkDelete">まとめて削除</button>
+            </div>
+            <div class="tag-chips">
               <button
-                v-for="option in sizeOptions"
-                :key="option.value"
-                class="size-btn"
-                :class="{ active: photoCardSize === option.value }"
-                @click="setPhotoCardSize(option.value)"
+                v-for="tag in tagOptions"
+                :key="tag.value"
+                type="button"
+                class="tag-chip"
+                :disabled="selectedPhotoIds.length === 0"
+                :style="{ '--chip-color': tagColors[tag.value] }"
+                @click="bulkSetTag(tag.value)"
               >
-                {{ option.label }}
+                <span class="chip-dot" :style="{ background: tagColors[tag.value] }" />
+                {{ tag.label }}
               </button>
             </div>
-          </div>
-        </div>
-
-        <div v-if="selectionMode" class="bulk-bar">
-          <div class="bulk-head">
-            <strong>{{ selectedPhotoIds.length }}枚選択中</strong>
-            <button class="text-btn" type="button" @click="clearSelectedPhotos">選択解除</button>
-          </div>
-          <div class="bulk-actions">
-            <button class="secondary-btn" type="button" :disabled="selectedPhotoIds.length === 0" @click="bulkSetVisibility(true)">まとめて公開</button>
-            <button class="secondary-btn" type="button" :disabled="selectedPhotoIds.length === 0" @click="bulkSetVisibility(false)">まとめて非公開</button>
-          </div>
-          <div class="tag-chips">
-            <button
-              v-for="tag in tagOptions"
-              :key="tag.value"
-              type="button"
-              class="tag-chip"
-              :disabled="selectedPhotoIds.length === 0"
-              @click="bulkSetTag(tag.value)"
-            >
-              {{ tag.label }}
-            </button>
-          </div>
-        </div>
-
-        <!-- マスコット代表画像 -->
-        <div class="mascot-cover-row">
-          <span class="field-label">マスコットを代表画像に</span>
-          <div class="mascot-cover-options">
-            <button
-              class="mascot-cover-btn"
-              :class="{ 'mascot-cover-btn--active': project.coverPhotoUrl === '/brand/buildog-helmet-mascot.png' && !project.coverPhotoId }"
-              type="button"
-              @click="setMascotCover('/brand/buildog-helmet-mascot.png')"
-            >
-              <img src="/brand/buildog-helmet-mascot.png" alt="ヘルメット" class="mascot-thumb" />
-              <span class="mascot-label">ヘルメット</span>
-            </button>
-            <button
-              class="mascot-cover-btn"
-              :class="{ 'mascot-cover-btn--active': project.coverPhotoUrl === '/brand/normal.png' && !project.coverPhotoId }"
-              type="button"
-              @click="setMascotCover('/brand/normal.png')"
-            >
-              <img src="/brand/normal.png" alt="ノーマル" class="mascot-thumb" />
-              <span class="mascot-label">ノーマル</span>
-            </button>
-            <button
-              v-if="project.coverPhotoUrl && !project.coverPhotoId"
-              class="mascot-cover-btn mascot-cover-btn--clear"
-              type="button"
-              @click="setMascotCover('')"
-            >
-              解除
-            </button>
           </div>
         </div>
 
@@ -182,7 +159,10 @@
         <div v-else class="group-stack">
           <section v-for="group in groupedPhotos" :key="group.key" class="photo-group">
             <div class="group-head">
-              <h3 class="group-title">{{ group.title }}</h3>
+              <h3 class="group-title">
+                <span class="group-title-dot" :style="{ background: groupTitleColor(group.key) }" />
+                {{ group.title }}
+              </h3>
               <span class="group-count">{{ group.photos.length }}枚</span>
             </div>
 
@@ -242,6 +222,39 @@
               </article>
             </div>
           </section>
+        </div>
+
+        <!-- マスコット代表画像（アフター写真の下） -->
+        <div class="mascot-cover-row">
+          <span class="field-label">マスコットを代表画像に</span>
+          <div class="mascot-cover-options">
+            <button
+              class="mascot-cover-btn"
+              :class="{ 'mascot-cover-btn--active': project.coverPhotoUrl === '/brand/buildog-helmet-mascot.png' && !project.coverPhotoId }"
+              type="button"
+              @click="setMascotCover('/brand/buildog-helmet-mascot.png')"
+            >
+              <img src="/brand/buildog-helmet-mascot.png" alt="ヘルメット" class="mascot-thumb" />
+              <span class="mascot-label">ヘルメット</span>
+            </button>
+            <button
+              class="mascot-cover-btn"
+              :class="{ 'mascot-cover-btn--active': project.coverPhotoUrl === '/brand/normal.png' && !project.coverPhotoId }"
+              type="button"
+              @click="setMascotCover('/brand/normal.png')"
+            >
+              <img src="/brand/normal.png" alt="ノーマル" class="mascot-thumb" />
+              <span class="mascot-label">ノーマル</span>
+            </button>
+            <button
+              v-if="project.coverPhotoUrl && !project.coverPhotoId"
+              class="mascot-cover-btn mascot-cover-btn--clear"
+              type="button"
+              @click="setMascotCover('')"
+            >
+              解除
+            </button>
+          </div>
         </div>
       </section>
 
@@ -558,6 +571,21 @@ async function bulkSetVisibility(isPublic: boolean) {
 async function bulkSetTag(tag: ProjectPhotoTag) {
   await projectStore.updatePhotosBulk(projectId.value, selectedPhotoIds.value, { tag })
   clearSelectedPhotos()
+}
+
+async function bulkDelete() {
+  if (selectedPhotoIds.value.length === 0) return
+  const ok = window.confirm(`選択した${selectedPhotoIds.value.length}枚の写真を削除しますか？`)
+  if (!ok) return
+  await projectStore.deletePhotosBulk(projectId.value, [...selectedPhotoIds.value])
+  clearSelectedPhotos()
+}
+
+function groupTitleColor(key: GroupKey): string {
+  if (key === 'before') return tagColors.value.before
+  if (key === 'during_material') return tagColors.value.during
+  if (key === 'after') return tagColors.value.after
+  return tagColors.value.untagged
 }
 
 function openPhotoModal(photo: ProjectPhoto) {
@@ -1173,14 +1201,74 @@ function formatDateTime(value: string) {
   color: var(--text-muted);
 }
 
+/* 選択モード開閉パネル */
+.collapsible-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.panel-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  width: fit-content;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.panel-toggle-btn--open {
+  background: var(--accent-bg);
+  border-color: var(--border-accent);
+  color: var(--accent-strong);
+}
+
+.panel-toggle-label { white-space: nowrap; }
+
+.panel-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
 .bulk-bar {
   gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  display: grid;
 }
 
 .bulk-head,
 .bulk-actions {
   flex-wrap: wrap;
   justify-content: flex-start;
+}
+
+/* グループタイトルのカラードット */
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.group-title-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .fab-add-btn {

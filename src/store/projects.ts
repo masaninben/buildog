@@ -15,6 +15,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
@@ -45,7 +46,12 @@ function projectPhotosRef(projectId: string) {
 }
 
 function sortProjects(projects: BuildogProject[]) {
-  return [...projects].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  return [...projects].sort((a, b) => {
+    const aOrder = a.sortOrder ?? Number.MAX_SAFE_INTEGER
+    const bOrder = b.sortOrder ?? Number.MAX_SAFE_INTEGER
+    if (aOrder !== bOrder) return aOrder - bOrder
+    return b.updatedAt.localeCompare(a.updatedAt)
+  })
 }
 
 function sortPhotos(photos: ProjectPhoto[]) {
@@ -70,6 +76,7 @@ function normalizeProject(id: string, data: Record<string, unknown>): BuildogPro
     coverPhotoUrl: String(data.coverPhotoUrl ?? ''),
     coverPhotoId: String(data.coverPhotoId ?? ''),
     photoCount: Number(data.photoCount ?? 0),
+    sortOrder: typeof data.sortOrder === 'number' ? data.sortOrder : null,
   }
 }
 
@@ -343,6 +350,41 @@ export const projectStore = {
       coverPhotoUrl: photo.url,
       updatedAt: serverTimestamp(),
     })
+  },
+
+  async reorderProjects(orderedIds: string[]) {
+    const uid = authState.user?.uid
+    if (!uid) return
+    const batch = writeBatch(db)
+    orderedIds.forEach((id, index) => {
+      batch.update(projectRef(id), { sortOrder: index + 1 })
+    })
+    await batch.commit()
+  },
+
+  async deletePhotosBulk(projectId: string, photoIds: string[]) {
+    const uid = authState.user?.uid
+    if (!uid) return
+    const project = state.projects.find((entry) => entry.id === projectId)
+    if (!project || project.ownerId !== uid) return
+    const photos = state.photosByProject[projectId] ?? []
+    const batch = writeBatch(db)
+    for (const photoId of photoIds) {
+      const photo = photos.find((entry) => entry.id === photoId)
+      if (!photo) continue
+      batch.delete(doc(db, 'projects', projectId, 'photos', photoId))
+      if (photo.storagePath) {
+        deleteObject(storageRef(storage, photo.storagePath)).catch(() => {})
+      }
+    }
+    batch.update(projectRef(projectId), {
+      photoCount: increment(-photoIds.length),
+      updatedAt: serverTimestamp(),
+    })
+    await batch.commit()
+    if (photoIds.includes(project.coverPhotoId)) {
+      await this.refreshProjectCover(projectId)
+    }
   },
 
   async setCustomCover(projectId: string, url: string) {

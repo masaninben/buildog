@@ -11,6 +11,7 @@ export interface BuildogProject {
   coverPhotoUrl: string
   coverPhotoId: string
   photoCount: number
+  sortOrder: number | null
 }
 
 export type ProjectPhotoTag = 'before' | 'during' | 'after' | 'material' | 'untagged'

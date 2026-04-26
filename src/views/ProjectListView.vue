@@ -37,13 +37,26 @@
           </div>
         </article>
 
-        <ProjectCard
+        <div
           v-for="project in projects"
           :key="project.id"
-          :project="project"
-          :size="cardSize"
-          @click="openProject"
-        />
+          class="card-wrapper"
+          :class="{
+            'card-wrapper--dragging': draggingId === project.id,
+            'card-wrapper--drop-target': dropTargetId === project.id && draggingId !== project.id,
+          }"
+          draggable="true"
+          @dragstart="onDragStart(project.id)"
+          @dragover.prevent="onDragOver(project.id)"
+          @drop.prevent="onDrop(project.id)"
+          @dragend="onDragEnd"
+        >
+          <ProjectCard
+            :project="project"
+            :size="cardSize"
+            @click="openProject"
+          />
+        </div>
       </div>
     </main>
   </div>
@@ -67,8 +80,11 @@ const sizeOptions: { value: CardSize; label: string }[] = [
 
 const router = useRouter()
 const projects = computed(() => projectStore.projects)
-const defaultSize: CardSize = window.innerWidth <= 768 ? 'medium' : 'medium'
+const defaultSize: CardSize = 'medium'
 const cardSize = ref<CardSize>((localStorage.getItem(STORAGE_KEY) as CardSize | null) ?? defaultSize)
+
+const draggingId = ref<string | null>(null)
+const dropTargetId = ref<string | null>(null)
 
 function setCardSize(size: CardSize) {
   cardSize.value = size
@@ -77,6 +93,35 @@ function setCardSize(size: CardSize) {
 
 function openProject(project: BuildogProject) {
   router.push({ name: 'project-detail', params: { id: project.id } })
+}
+
+function onDragStart(projectId: string) {
+  draggingId.value = projectId
+  dropTargetId.value = projectId
+}
+
+function onDragOver(projectId: string) {
+  dropTargetId.value = projectId
+}
+
+async function onDrop(targetId: string) {
+  if (!draggingId.value || draggingId.value === targetId) {
+    onDragEnd()
+    return
+  }
+  const list = [...projects.value]
+  const fromIdx = list.findIndex((p) => p.id === draggingId.value)
+  const toIdx = list.findIndex((p) => p.id === targetId)
+  if (fromIdx === -1 || toIdx === -1) { onDragEnd(); return }
+  const [moved] = list.splice(fromIdx, 1)
+  list.splice(toIdx, 0, moved)
+  await projectStore.reorderProjects(list.map((p) => p.id))
+  onDragEnd()
+}
+
+function onDragEnd() {
+  draggingId.value = null
+  dropTargetId.value = null
 }
 </script>
 
@@ -209,6 +254,22 @@ function openProject(project: BuildogProject) {
   .project-grid--large  { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .project-grid--medium { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .project-grid--small  { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+}
+
+/* D&Dラッパー */
+.card-wrapper {
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.card-wrapper--dragging {
+  opacity: 0.45;
+  transform: scale(0.97);
+}
+
+.card-wrapper--drop-target {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 18px;
 }
 
 /* 空状態カード（案件カードと同サイズ） */
