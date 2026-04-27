@@ -1,19 +1,34 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ユーザー自身のデータのみ読み書き可
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
     match /projects/{projectId} {
+      // 公開案件は誰でも読める（施主URLアクセス）
+      // オーナーは常に読める
       allow read: if resource.data.isPublic == true
         || (request.auth != null && resource.data.ownerId == request.auth.uid);
+
+      // 新規作成: ownerId は自分の UID のみ・必須フィールドの存在チェック
       allow create: if request.auth != null
-        && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.keys().hasAll(['name', 'ownerId', 'isPublic', 'createdAt', 'updatedAt']);
+
+      // 更新: オーナーのみ・ownerId の書き換え禁止
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId;
+
+      // 削除: オーナーのみ
+      allow delete: if request.auth != null
         && resource.data.ownerId == request.auth.uid;
 
       match /photos/{photoId} {
+        // 読み取り: 案件が公開かつ写真が公開、またはオーナー
         allow read: if (
           get(/databases/$(database)/documents/projects/$(projectId)).data.isPublic == true
           && resource.data.isPublic == true
@@ -21,7 +36,14 @@ service cloud.firestore {
           request.auth != null
           && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid
         );
-        allow create, update, delete: if request.auth != null
+
+        // 写真追加: オーナーのみ・uploadedBy は自分の UID
+        allow create: if request.auth != null
+          && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid
+          && request.resource.data.uploadedBy == request.auth.uid;
+
+        // 写真更新・削除: オーナーのみ
+        allow update, delete: if request.auth != null
           && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid;
       }
     }
