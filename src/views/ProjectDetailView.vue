@@ -373,6 +373,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import PhotoUpload from '../components/PhotoUpload.vue'
 import { useConfirm } from '../composables/useConfirm'
+import { useToast } from '../composables/useToast'
 import { projectStore } from '../store/projects'
 import { PROJECT_PHOTO_TAG_LABELS, type ProjectPhoto, type ProjectPhotoTag } from '../types'
 
@@ -395,6 +396,7 @@ const photos = computed(() => projectStore.getPhotos(projectId.value))
 const isLoading = computed(() => !projectStore.loaded)
 
 const { confirm } = useConfirm()
+const { success: toastSuccess, error: toastError } = useToast()
 
 const photoUploadRef = ref<InstanceType<typeof PhotoUpload> | null>(null)
 const uploadMemo = ref('')
@@ -530,6 +532,9 @@ async function uploadPendingFiles() {
     clearPendingFiles()
     uploadMemo.value = ''
     uploadTag.value = 'untagged'
+    toastSuccess('写真をアップロードしました')
+  } catch {
+    toastError('アップロードに失敗しました。通信環境を確認してください。')
   } finally {
     uploadingPending.value = false
   }
@@ -595,8 +600,13 @@ async function bulkDelete() {
     danger: true,
   })
   if (!ok) return
-  await projectStore.deletePhotosBulk(projectId.value, [...selectedPhotoIds.value])
-  clearSelectedPhotos()
+  try {
+    await projectStore.deletePhotosBulk(projectId.value, [...selectedPhotoIds.value])
+    clearSelectedPhotos()
+    toastSuccess('写真を削除しました')
+  } catch {
+    toastError('削除に失敗しました。')
+  }
 }
 
 function groupTitleColor(key: GroupKey): string {
@@ -619,18 +629,28 @@ function closePhotoModal() {
 
 async function savePhotoEdits() {
   if (!editingPhoto.value) return
-  await projectStore.updatePhoto(projectId.value, editingPhoto.value.id, {
-    tag: editTag.value,
-    memo: editMemo.value,
-    isPublic: editIsPublic.value,
-  })
-  closePhotoModal()
+  try {
+    await projectStore.updatePhoto(projectId.value, editingPhoto.value.id, {
+      tag: editTag.value,
+      memo: editMemo.value,
+      isPublic: editIsPublic.value,
+    })
+    closePhotoModal()
+    toastSuccess('変更を保存しました')
+  } catch {
+    toastError('保存に失敗しました。')
+  }
 }
 
 async function setCoverPhoto() {
   if (!editingPhoto.value) return
-  await projectStore.setProjectCover(projectId.value, editingPhoto.value.id)
-  closePhotoModal()
+  try {
+    await projectStore.setProjectCover(projectId.value, editingPhoto.value.id)
+    closePhotoModal()
+    toastSuccess('代表画像を設定しました')
+  } catch {
+    toastError('代表画像の設定に失敗しました。')
+  }
 }
 
 async function downloadEditingPhoto() {
@@ -661,8 +681,13 @@ async function deleteEditingPhoto() {
     danger: true,
   })
   if (!ok) return
-  await projectStore.deletePhoto(projectId.value, editingPhoto.value.id)
-  closePhotoModal()
+  try {
+    await projectStore.deletePhoto(projectId.value, editingPhoto.value.id)
+    closePhotoModal()
+    toastSuccess('写真を削除しました')
+  } catch {
+    toastError('削除に失敗しました。')
+  }
 }
 
 async function setMascotCover(url: string) {

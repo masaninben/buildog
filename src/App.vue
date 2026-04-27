@@ -7,6 +7,7 @@
     </div>
     <AccountModal v-if="showAccountModal" @close="showAccountModal = false" />
   </template>
+  <ToastList />
 </template>
 
 <script setup lang="ts">
@@ -14,6 +15,7 @@ import { computed, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import AccountModal from './components/AccountModal.vue'
 import GlobalToolbar from './components/GlobalToolbar.vue'
+import ToastList from './components/ToastList.vue'
 import { authState } from './lib/auth'
 import { useTheme } from './composables/useTheme'
 
