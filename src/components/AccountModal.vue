@@ -52,18 +52,27 @@
         </template>
       </div>
 
+      <!-- オーナーのみ: メンバー管理ボタン -->
+      <button v-if="isOwner" class="members-btn" type="button" @click="showMembersModal = true">
+        メンバー管理
+        <span class="members-count">{{ memberCount }} 人</span>
+      </button>
+
       <button class="signout-btn" @click="handleSignOut">ログアウト</button>
     </div>
   </div>
+
+  <OrgMembersModal v-if="showMembersModal" @close="showMembersModal = false" />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { signOut } from '../lib/auth'
 import { orgStore } from '../store/org'
 import { projectStore } from '../store/projects'
 import { userProfileStore } from '../store/userProfile'
+import OrgMembersModal from './OrgMembersModal.vue'
 
 defineEmits<{ close: [] }>()
 
@@ -77,6 +86,9 @@ const initial = computed(() => (profile.value?.displayName || profile.value?.ema
 const org = computed(() => orgStore.org)
 const trialDays = computed(() => orgStore.trialDaysRemaining)
 const isTrialExpired = computed(() => orgStore.isTrialExpired)
+const isOwner = computed(() => orgStore.isOwner)
+const memberCount = computed(() => orgStore.memberCount)
+const showMembersModal = ref(false)
 
 const TRIAL_DAYS = 30
 const trialProgressPct = computed(() => {
@@ -216,6 +228,34 @@ async function handleSignOut() {
   color: var(--text-sub);
   font-size: 13px;
   line-height: 1.7;
+}
+
+.members-btn {
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  transition: background 0.12s;
+}
+.members-btn:hover {
+  background: var(--bg-hover);
+}
+.members-count {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border: 1px solid var(--border-faint);
+  border-radius: 999px;
+  padding: 2px 10px;
 }
 
 .signout-btn {

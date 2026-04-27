@@ -62,4 +62,5 @@ export interface OrgMember {
   displayName: string
   email: string
   joinedAt: string
+  canCreateProject: boolean  // オーナーが明示付与しない限り false
 }

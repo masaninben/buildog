@@ -24,7 +24,7 @@
         <input v-model="siteAddress" class="field-input" type="text" placeholder="例）渋谷区神南 2-10-4" />
       </label>
 
-      <button class="submit-btn" :disabled="saving">
+      <button class="submit-btn" :disabled="saving || !canCreate" :title="canCreate ? '' : '案件作成の権限がありません'">
         {{ saving ? '作成中…' : '案件を作成する' }}
       </button>
     </form>
@@ -32,18 +32,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { orgStore } from '../store/org'
 import { projectStore } from '../store/projects'
+import { useToast } from '../composables/useToast'
 
 const router = useRouter()
+const { error: toastError } = useToast()
 const name = ref('')
 const clientName = ref('')
 const siteAddress = ref('')
 const saving = ref(false)
 
+const canCreate = computed(() => orgStore.canCreateProject)
+
 async function submit() {
   if (!name.value.trim() || saving.value) return
+
+  if (!canCreate.value) {
+    toastError('案件の作成権限がありません。オーナーに権限付与を依頼してください。')
+    return
+  }
+
   saving.value = true
   try {
     const id = await projectStore.createProject({
