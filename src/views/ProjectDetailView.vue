@@ -360,6 +360,8 @@
         </div>
       </div>
     </div>
+
+    <ConfirmModal />
   </div>
 </template>
 
@@ -368,7 +370,9 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { jsPDF } from 'jspdf'
 import QRCode from 'qrcode'
 import { useRoute, useRouter } from 'vue-router'
+import ConfirmModal from '../components/ConfirmModal.vue'
 import PhotoUpload from '../components/PhotoUpload.vue'
+import { useConfirm } from '../composables/useConfirm'
 import { projectStore } from '../store/projects'
 import { PROJECT_PHOTO_TAG_LABELS, type ProjectPhoto, type ProjectPhotoTag } from '../types'
 
@@ -389,6 +393,8 @@ const projectId = computed(() => route.params.id as string)
 const project = computed(() => projectStore.getProjectById(projectId.value))
 const photos = computed(() => projectStore.getPhotos(projectId.value))
 const isLoading = computed(() => !projectStore.loaded)
+
+const { confirm } = useConfirm()
 
 const photoUploadRef = ref<InstanceType<typeof PhotoUpload> | null>(null)
 const uploadMemo = ref('')
@@ -582,7 +588,12 @@ async function bulkSetTag(tag: ProjectPhotoTag) {
 
 async function bulkDelete() {
   if (selectedPhotoIds.value.length === 0) return
-  const ok = window.confirm(`選択した${selectedPhotoIds.value.length}枚の写真を削除しますか？`)
+  const ok = await confirm({
+    title: `${selectedPhotoIds.value.length}枚の写真を削除`,
+    message: 'この操作は取り消せません。選択した写真をすべて削除しますか？',
+    confirmLabel: '削除する',
+    danger: true,
+  })
   if (!ok) return
   await projectStore.deletePhotosBulk(projectId.value, [...selectedPhotoIds.value])
   clearSelectedPhotos()
@@ -643,7 +654,12 @@ async function downloadEditingPhoto() {
 
 async function deleteEditingPhoto() {
   if (!editingPhoto.value) return
-  const ok = window.confirm('この写真を削除しますか？')
+  const ok = await confirm({
+    title: 'この写真を削除',
+    message: '削除した写真は元に戻せません。',
+    confirmLabel: '削除する',
+    danger: true,
+  })
   if (!ok) return
   await projectStore.deletePhoto(projectId.value, editingPhoto.value.id)
   closePhotoModal()
