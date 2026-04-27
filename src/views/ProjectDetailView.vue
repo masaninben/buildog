@@ -333,6 +333,7 @@
 
         <div class="modal-actions">
           <button class="secondary-btn secondary-btn--accent" type="button" @click="setCoverPhoto">代表画像に設定</button>
+          <button class="secondary-btn" type="button" @click="downloadEditingPhoto">保存 ↓</button>
           <button class="danger-btn" type="button" @click="deleteEditingPhoto">削除</button>
           <button class="secondary-btn" type="button" @click="closePhotoModal">キャンセル</button>
           <button class="upload-btn" type="button" @click="savePhotoEdits">保存する</button>
@@ -619,6 +620,25 @@ async function setCoverPhoto() {
   if (!editingPhoto.value) return
   await projectStore.setProjectCover(projectId.value, editingPhoto.value.id)
   closePhotoModal()
+}
+
+async function downloadEditingPhoto() {
+  if (!editingPhoto.value) return
+  try {
+    const res = await fetch(editingPhoto.value.url)
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const dateStr = new Date(editingPhoto.value.createdAt).toISOString().slice(0, 10).replace(/-/g, '')
+    a.download = `buildog_${dateStr}.jpg`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch {
+    // silent
+  }
 }
 
 async function deleteEditingPhoto() {

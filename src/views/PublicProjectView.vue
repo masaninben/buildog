@@ -27,14 +27,22 @@
         <section class="photo-section">
           <div class="section-head">
             <h2 class="section-title">施工の記録</h2>
-            <div class="size-switch">
-              <button
-                v-for="opt in sizeOptions"
-                :key="opt.value"
-                class="size-btn"
-                :class="{ active: photoSize === opt.value }"
-                @click="setPhotoSize(opt.value)"
-              >{{ opt.label }}</button>
+            <div class="section-head-right">
+              <div class="size-switch">
+                <button
+                  v-for="opt in sizeOptions"
+                  :key="opt.value"
+                  class="size-btn"
+                  :class="{ active: photoSize === opt.value }"
+                  @click="setPhotoSize(opt.value)"
+                >{{ opt.label }}</button>
+              </div>
+              <button class="print-btn" @click="printReport" title="印刷">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+                </svg>
+                印刷
+              </button>
             </div>
           </div>
 
@@ -64,7 +72,15 @@
     <!-- ライトボックス -->
     <div v-if="lightboxPhoto" class="lightbox" @click.self="lightboxPhoto = null">
       <div class="lightbox-inner">
-        <button class="lightbox-close" @click="lightboxPhoto = null">✕</button>
+        <div class="lightbox-toolbar">
+          <button class="lightbox-close" @click="lightboxPhoto = null">✕</button>
+          <button class="lightbox-dl-btn" @click="downloadPhoto(lightboxPhoto)" title="ダウンロード">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v13M7 11l5 5 5-5"/><path d="M3 19h18"/>
+            </svg>
+            保存
+          </button>
+        </div>
         <img :src="lightboxPhoto.url" class="lightbox-img" />
         <div v-if="lightboxPhoto.memo" class="lightbox-memo">{{ lightboxPhoto.memo }}</div>
         <p class="lightbox-date">{{ formatDateTime(lightboxPhoto.createdAt) }}</p>
@@ -130,6 +146,28 @@ function setPhotoSize(size: PhotoSize) {
 
 function openLightbox(photo: ProjectPhoto) {
   lightboxPhoto.value = photo
+}
+
+async function downloadPhoto(photo: ProjectPhoto) {
+  try {
+    const res = await fetch(photo.url)
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const dateStr = new Date(photo.createdAt).toISOString().slice(0, 10).replace(/-/g, '')
+    a.download = `buildog_${dateStr}.jpg`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch {
+    // silent
+  }
+}
+
+function printReport() {
+  window.print()
 }
 
 function formatDate(value: string) {
@@ -405,6 +443,35 @@ function formatDateTime(value: string) {
   font-weight: 700;
 }
 
+/* セクションヘッド右側 */
+.section-head-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* 印刷ボタン */
+.print-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg-surface);
+  color: var(--text-sub);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.print-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
 /* ライトボックス */
 .lightbox {
   position: fixed;
@@ -425,10 +492,14 @@ function formatDateTime(value: string) {
   gap: 10px;
 }
 
+.lightbox-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: -4px;
+}
+
 .lightbox-close {
-  position: absolute;
-  top: -44px;
-  right: 0;
   width: 36px;
   height: 36px;
   border: none;
@@ -437,6 +508,25 @@ function formatDateTime(value: string) {
   color: #fff;
   font-size: 16px;
   cursor: pointer;
+}
+
+.lightbox-dl-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.lightbox-dl-btn:hover {
+  background: rgba(255,255,255,0.26);
 }
 
 .lightbox-img {
@@ -497,6 +587,98 @@ function formatDateTime(value: string) {
     flex-direction: column;
     gap: 4px;
     text-align: center;
+  }
+}
+
+/* ===== 印刷スタイル ===== */
+@media print {
+  /* 強制ライトモード */
+  .public-project-view {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  /* ヘッダー */
+  .pub-header {
+    background: none !important;
+    padding: 0 0 12px !important;
+    border-bottom: 2px solid #222;
+    margin-bottom: 12px;
+  }
+  .pub-badge { color: #1e5aae !important; }
+  .pub-title { font-size: 22px !important; }
+  .pub-meta { color: #555 !important; }
+
+  /* ボディのmax-width解除 */
+  .pub-body {
+    padding: 0 !important;
+    gap: 12px !important;
+  }
+
+  /* 概要カード */
+  .overview-card {
+    background: #f5f7fa !important;
+    border: 1px solid #ccc !important;
+  }
+  .overview-label { color: #666 !important; }
+  .overview-value { font-size: 20px !important; }
+
+  /* 写真セクション */
+  .photo-section {
+    background: #fff !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  /* 印刷不要UI */
+  .section-head-right,
+  .print-btn,
+  .size-switch,
+  .pub-footer,
+  .lightbox { display: none !important; }
+
+  /* セクションヘッドは写真タイトルのみ */
+  .section-head { justify-content: flex-start !important; }
+
+  /* グループラベル */
+  .group-label {
+    background: #e8eef7 !important;
+    color: #1e5aae !important;
+    font-size: 11px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 写真グリッド: 4列固定 */
+  .photo-grid,
+  .photo-grid--large,
+  .photo-grid--medium,
+  .photo-grid--small {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+  }
+
+  /* 写真カード */
+  .photo-card {
+    break-inside: avoid;
+    cursor: default !important;
+    border-radius: 4px !important;
+  }
+  .photo-card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* photo-groupが次ページにまたがらないよう抑制 */
+  .photo-group {
+    break-inside: avoid;
+  }
+
+  /* メモバッジ */
+  .photo-memo-badge {
+    background: rgba(0,0,0,0.5) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
 </style>
