@@ -32,7 +32,25 @@
         </div>
       </div>
 
-      <p class="help-text">Buildogでは案件ごとに施工写真を整理し、顧客には公開URLで共有できます。</p>
+      <!-- プラン・試用期間 -->
+      <div class="plan-section">
+        <div class="plan-row">
+          <span class="plan-label">プラン</span>
+          <span class="plan-badge" :class="planBadgeClass">{{ planLabel }}</span>
+        </div>
+        <template v-if="org?.plan === 'trial' && !isTrialExpired">
+          <div class="trial-bar-wrap">
+            <div class="trial-bar">
+              <div class="trial-progress" :style="{ width: trialProgressPct + '%' }" />
+            </div>
+            <span class="trial-days">残り {{ trialDays }} 日</span>
+          </div>
+          <p class="plan-note">試用期間終了後もデータはそのまま保持されます。継続利用はご連絡ください。</p>
+        </template>
+        <template v-else-if="isTrialExpired">
+          <p class="plan-expired">試用期間が終了しました。継続利用はお問い合わせください。</p>
+        </template>
+      </div>
 
       <button class="signout-btn" @click="handleSignOut">ログアウト</button>
     </div>
@@ -43,6 +61,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { signOut } from '../lib/auth'
+import { orgStore } from '../store/org'
 import { projectStore } from '../store/projects'
 import { userProfileStore } from '../store/userProfile'
 
@@ -54,6 +73,31 @@ const projects = computed(() => projectStore.projects)
 const totalPhotos = computed(() => projects.value.reduce((sum, project) => sum + project.photoCount, 0))
 const sharedProjects = computed(() => projects.value.filter((project) => project.isPublic).length)
 const initial = computed(() => (profile.value?.displayName || profile.value?.email || '?').charAt(0).toUpperCase())
+
+const org = computed(() => orgStore.org)
+const trialDays = computed(() => orgStore.trialDaysRemaining)
+const isTrialExpired = computed(() => orgStore.isTrialExpired)
+
+const TRIAL_DAYS = 30
+const trialProgressPct = computed(() => {
+  if (!org.value || org.value.plan !== 'trial') return 100
+  const used = TRIAL_DAYS - trialDays.value
+  return Math.min(100, Math.round((used / TRIAL_DAYS) * 100))
+})
+
+const planLabel = computed(() => {
+  if (!org.value) return '—'
+  if (org.value.plan === 'unlimited') return '無制限プラン'
+  if (isTrialExpired.value) return '試用期間終了'
+  return '無料トライアル'
+})
+
+const planBadgeClass = computed(() => {
+  if (!org.value) return ''
+  if (org.value.plan === 'unlimited') return 'plan-badge--active'
+  if (isTrialExpired.value) return 'plan-badge--expired'
+  return 'plan-badge--trial'
+})
 
 async function handleSignOut() {
   await signOut()
@@ -182,5 +226,92 @@ async function handleSignOut() {
   color: #fff;
   font-weight: 800;
   cursor: pointer;
+}
+
+/* プランセクション */
+.plan-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: 14px;
+}
+
+.plan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plan-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+
+.plan-badge {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.plan-badge--trial {
+  background: var(--warm-bg);
+  color: var(--warm);
+  border: 1px solid var(--warm-border);
+}
+
+.plan-badge--active {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.plan-badge--expired {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.trial-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trial-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.trial-progress {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--warm);
+  transition: width 0.3s ease;
+}
+
+.trial-days {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--warm);
+  flex-shrink: 0;
+}
+
+.plan-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.plan-expired {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--danger);
+  line-height: 1.6;
 }
 </style>

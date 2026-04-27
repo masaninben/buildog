@@ -22,6 +22,7 @@ import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'fi
 import { db } from '../lib/firebase'
 import { storage } from '../lib/firebase'
 import { authState } from '../lib/auth'
+import { orgStore } from './org'
 import type { BuildogProject, CreateProjectPayload, ProjectPhoto, ProjectPhotoTag } from '../types'
 
 const state = reactive({
@@ -183,6 +184,7 @@ export const projectStore = {
       clientName: payload.clientName?.trim() ?? '',
       siteAddress: payload.siteAddress?.trim() ?? '',
       ownerId: uid,
+      orgId: orgStore.org?.id ?? '',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       isPublic: false,

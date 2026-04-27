@@ -7,6 +7,31 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // 運営管理者ドキュメント（Firebase Console から手動作成、クライアントからは読み取りのみ）
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 組織
+    match /organizations/{orgId} {
+      // オーナーのみ読める
+      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
+
+      // 作成: ownerId は自分のUID・必須フィールド存在チェック
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.keys().hasAll(['name', 'ownerId', 'plan', 'trialEndsAt', 'createdAt']);
+
+      // 更新: オーナーのみ・ownerId 書き換え禁止
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId;
+
+      // 削除: オーナーのみ
+      allow delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+    }
+
     match /projects/{projectId} {
       // 公開案件は誰でも読める（施主URLアクセス）
       // オーナーは常に読める

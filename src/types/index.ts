@@ -41,3 +41,25 @@ export interface CreateProjectPayload {
   clientName?: string
   siteAddress?: string
 }
+
+// ===== Organization =====
+
+export type OrgPlan = 'trial' | 'unlimited'
+export type OrgRole = 'owner' | 'member' | 'viewer'
+
+export interface Organization {
+  id: string
+  name: string
+  ownerId: string
+  plan: OrgPlan
+  trialEndsAt: string  // ISO date string
+  createdAt: string
+}
+
+export interface OrgMember {
+  uid: string
+  role: OrgRole
+  displayName: string
+  email: string
+  joinedAt: string
+}
