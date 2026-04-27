@@ -2,8 +2,10 @@ import { reactive, watch } from 'vue'
 import {
   addDoc,
   collection,
+  collectionGroup,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   query,
@@ -12,6 +14,7 @@ import {
   Timestamp,
   updateDoc,
   where,
+  writeBatch,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
@@ -24,6 +27,7 @@ const MAX_MEMBERS = 10
 const state = reactive({
   org: null as Organization | null,
   members: [] as OrgMember[],
+  isOwner: false,
   loaded: false,
 })
 
@@ -68,6 +72,22 @@ function subscribeMembersOf(orgId: string) {
   })
 }
 
+/** オーナーの既存プロジェクトに orgId が未設定のものがあれば一括バックフィル */
+async function backfillProjectOrgIds(uid: string, orgId: string) {
+  const snap = await getDocs(
+    query(collection(db, 'projects'), where('ownerId', '==', uid))
+  )
+  const batch = writeBatch(db)
+  let count = 0
+  for (const docSnap of snap.docs) {
+    if (!docSnap.data().orgId) {
+      batch.update(docSnap.ref, { orgId })
+      count++
+    }
+  }
+  if (count > 0) await batch.commit()
+}
+
 watch(
   () => authState.user,
   async (user) => {
@@ -75,41 +95,62 @@ watch(
     if (!user) {
       state.org = null
       state.members = []
+      state.isOwner = false
       state.loaded = false
       return
     }
 
-    // 自分がオーナーの組織を検索
-    const q = query(collection(db, 'organizations'), where('ownerId', '==', user.uid))
-    const snap = await getDocs(q)
+    // ① 自分がオーナーの組織を検索
+    const ownerSnap = await getDocs(
+      query(collection(db, 'organizations'), where('ownerId', '==', user.uid))
+    )
 
-    if (!snap.empty) {
-      const docSnap = snap.docs[0]
-      state.org = normalizeOrg(docSnap.id, docSnap.data() as Record<string, unknown>)
+    if (!ownerSnap.empty) {
+      // オーナーとして既存組織を発見
+      state.org = normalizeOrg(ownerSnap.docs[0].id, ownerSnap.docs[0].data() as Record<string, unknown>)
+      state.isOwner = true
+      // 既存プロジェクトへ orgId をバックフィル（初回のみ実質動作）
+      await backfillProjectOrgIds(user.uid, state.org.id)
     } else {
-      // 初回ログイン: 組織を自動作成（試用期間スタート）
-      const trialEnd = new Date()
-      trialEnd.setDate(trialEnd.getDate() + TRIAL_DAYS)
+      // ② メンバーとして所属している組織を collection group で検索
+      const memberSnap = await getDocs(
+        query(collectionGroup(db, 'members'), where('uid', '==', user.uid))
+      )
 
-      const ref = await addDoc(collection(db, 'organizations'), {
-        name: user.displayName ?? user.email ?? '新しい組織',
-        ownerId: user.uid,
-        plan: 'trial',
-        trialEndsAt: Timestamp.fromDate(trialEnd),
-        createdAt: serverTimestamp(),
-      })
+      if (!memberSnap.empty) {
+        // メンバーとして所属している組織が見つかった
+        const orgRef = memberSnap.docs[0].ref.parent.parent!
+        const orgSnap = await getDoc(orgRef)
+        if (orgSnap.exists()) {
+          state.org = normalizeOrg(orgSnap.id, orgSnap.data() as Record<string, unknown>)
+        }
+        state.isOwner = false
+      } else {
+        // ③ どこにも所属していない → 新規オーナーとして組織を自動作成
+        const trialEnd = new Date()
+        trialEnd.setDate(trialEnd.getDate() + TRIAL_DAYS)
 
-      state.org = {
-        id: ref.id,
-        name: user.displayName ?? user.email ?? '新しい組織',
-        ownerId: user.uid,
-        plan: 'trial',
-        trialEndsAt: trialEnd.toISOString(),
-        createdAt: new Date().toISOString(),
+        const ref = await addDoc(collection(db, 'organizations'), {
+          name: user.displayName ?? user.email ?? '新しい組織',
+          ownerId: user.uid,
+          plan: 'trial',
+          trialEndsAt: Timestamp.fromDate(trialEnd),
+          createdAt: serverTimestamp(),
+        })
+
+        state.org = {
+          id: ref.id,
+          name: user.displayName ?? user.email ?? '新しい組織',
+          ownerId: user.uid,
+          plan: 'trial',
+          trialEndsAt: trialEnd.toISOString(),
+          createdAt: new Date().toISOString(),
+        }
+        state.isOwner = true
       }
     }
 
-    subscribeMembersOf(state.org!.id)
+    if (state.org) subscribeMembersOf(state.org.id)
     state.loaded = true
   },
   { immediate: true },
@@ -126,6 +167,10 @@ export const orgStore = {
 
   get loaded(): boolean {
     return state.loaded
+  },
+
+  get isOwner(): boolean {
+    return state.isOwner
   },
 
   get memberCount(): number {
@@ -146,32 +191,21 @@ export const orgStore = {
     return new Date(state.org.trialEndsAt) <= new Date()
   },
 
-  /** ログインユーザーが組織のオーナーか */
-  get isOwner(): boolean {
-    return !!state.org && state.org.ownerId === authState.user?.uid
-  },
-
   /** ログインユーザーが新規案件を作成できるか */
   get canCreateProject(): boolean {
     if (!authState.user) return false
-    // オーナーは常に可
-    if (this.isOwner) return true
-    // メンバーは canCreateProject が付与されている場合のみ
+    if (state.isOwner) return true
     const me = state.members.find((m) => m.uid === authState.user!.uid)
     return me?.canCreateProject ?? false
   },
 
-  /**
-   * メールアドレスでBuildog登録済みユーザーを検索してメンバーに追加
-   * ルール上 users コレクションは認証済みユーザーが読み取り可
-   */
   async addMemberByEmail(
     email: string,
     role: OrgRole = 'member',
     canCreateProject = false,
   ): Promise<{ success: boolean; error?: string }> {
     if (!state.org) return { success: false, error: '組織が読み込まれていません' }
-    if (!this.isOwner) return { success: false, error: 'オーナーのみ操作できます' }
+    if (!state.isOwner) return { success: false, error: 'オーナーのみ操作できます' }
     if (state.members.length >= MAX_MEMBERS) {
       return { success: false, error: `メンバーは最大${MAX_MEMBERS}人までです` }
     }
@@ -180,8 +214,6 @@ export const orgStore = {
     if (trimmed === authState.user?.email?.toLowerCase()) {
       return { success: false, error: 'オーナー自身は追加できません' }
     }
-
-    // 既に追加済みか確認
     if (state.members.some((m) => m.email.toLowerCase() === trimmed)) {
       return { success: false, error: 'すでにメンバーに追加されています' }
     }
@@ -190,7 +222,6 @@ export const orgStore = {
     const usersSnap = await getDocs(
       query(collection(db, 'users'), where('email', '==', trimmed))
     )
-
     if (usersSnap.empty) {
       return { success: false, error: 'このメールアドレスのユーザーが見つかりません。先にBuildog登録が必要です。' }
     }
@@ -211,15 +242,13 @@ export const orgStore = {
     return { success: true }
   },
 
-  /** メンバーを削除 */
   async removeMember(uid: string): Promise<void> {
-    if (!state.org || !this.isOwner) return
+    if (!state.org || !state.isOwner) return
     await deleteDoc(doc(membersRef(state.org.id), uid))
   },
 
-  /** メンバーの権限を更新 */
   async updateMember(uid: string, patch: Partial<Pick<OrgMember, 'role' | 'canCreateProject'>>): Promise<void> {
-    if (!state.org || !this.isOwner) return
+    if (!state.org || !state.isOwner) return
     await updateDoc(doc(membersRef(state.org.id), uid), patch)
   },
 }

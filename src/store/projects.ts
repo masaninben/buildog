@@ -111,8 +111,9 @@ function toIsoString(value: unknown) {
 }
 
 watch(
-  () => authState.user,
-  (user) => {
+  [() => authState.user, () => orgStore.loaded],
+  ([user, orgLoaded]) => {
+    // 前のサブスクリプションを必ずクリア
     if (projectsUnsubscribe) {
       projectsUnsubscribe()
       projectsUnsubscribe = null
@@ -123,9 +124,18 @@ watch(
     state.loaded = false
     state.photosByProject = {}
 
-    if (!user) return
+    // ユーザーが未ログイン、または組織の読み込みが終わっていない場合は待機
+    if (!user || !orgLoaded) return
 
-    projectsUnsubscribe = onSnapshot(query(projectsRef(), where('ownerId', '==', user.uid)), (snapshot) => {
+    const org = orgStore.org
+
+    // オーナー: ownerId で検索（既存の動作）
+    // メンバー: orgId で検索（自分が所属する組織の全案件を取得）
+    const projectQuery = (orgStore.isOwner || !org)
+      ? query(projectsRef(), where('ownerId', '==', user.uid))
+      : query(projectsRef(), where('orgId', '==', org.id))
+
+    projectsUnsubscribe = onSnapshot(projectQuery, (snapshot) => {
       state.projects = sortProjects(
         snapshot.docs.map((entry) => normalizeProject(entry.id, entry.data()))
       )

@@ -14,6 +14,12 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == uid;
     }
 
+    // メンバーサブコレクションのコレクショングループ読み取り
+    // （メンバー自身が自分の所属組織を検索するために使用）
+    match /{path=**}/members/{memberId} {
+      allow read: if request.auth != null && request.auth.uid == memberId;
+    }
+
     // 組織
     match /organizations/{orgId} {
       allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
