@@ -34,8 +34,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { orgStore } from '../store/org'
 import { projectStore } from '../store/projects'
+import { userProfileStore } from '../store/userProfile'
 import { useToast } from '../composables/useToast'
 
 const router = useRouter()
@@ -45,13 +45,13 @@ const clientName = ref('')
 const siteAddress = ref('')
 const saving = ref(false)
 
-const canCreate = computed(() => orgStore.canCreateProject)
+const canCreate = computed(() => userProfileStore.canCreateProject)
 
 async function submit() {
   if (!name.value.trim() || saving.value) return
 
   if (!canCreate.value) {
-    toastError('案件の作成権限がありません。オーナーに権限付与を依頼してください。')
+    toastError('試用期間が終了しています。継続利用はお問い合わせください。')
     return
   }
 

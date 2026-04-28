@@ -2,96 +2,110 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ユーザープロフィール
-    // 書き込みは本人のみ。読み取りは認証済みユーザー全員（メンバー招待時のメール検索に使用）
+    // ユーザープロフィール（plan・trialEndsAt含む）
     match /users/{uid} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // 運営管理者ドキュメント（Firebase Console から手動作成、クライアントからは読み取りのみ）
+    // 運営管理者（Firebase Console で手動作成、クライアントは読み取りのみ）
     match /admins/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
     }
 
-    // メンバーサブコレクションのコレクショングループ読み取り
-    // （メンバー自身が自分の所属組織を検索するために使用）
+    // collection group: 自分の member ドキュメントを読める（共有案件一覧取得に使用）
     match /{path=**}/members/{memberId} {
       allow read: if request.auth != null && request.auth.uid == memberId;
     }
 
-    // 組織
-    match /organizations/{orgId} {
-      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
-
-      allow create: if request.auth != null
-        && request.resource.data.ownerId == request.auth.uid
-        && request.resource.data.keys().hasAll(['name', 'ownerId', 'plan', 'trialEndsAt', 'createdAt']);
-
-      allow update: if request.auth != null
-        && resource.data.ownerId == request.auth.uid
-        && request.resource.data.ownerId == resource.data.ownerId;
-
-      allow delete: if request.auth != null
-        && resource.data.ownerId == request.auth.uid;
-
-      // メンバーサブコレクション
-      match /members/{memberId} {
-        // オーナーは全メンバーを読み書き可
-        // メンバー自身は自分のドキュメントを読める
-        allow read: if request.auth != null && (
-          get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid
-          || request.auth.uid == memberId
-        );
-        allow write: if request.auth != null
-          && get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid;
-      }
-    }
-
     match /projects/{projectId} {
-      // 読み取り: 公開案件 / オーナー / その案件が属する組織のメンバー
-      allow read: if resource.data.isPublic == true
-        || (request.auth != null && resource.data.ownerId == request.auth.uid)
-        || (request.auth != null
-            && resource.data.orgId != ''
-            && exists(/databases/$(database)/documents/organizations/$(resource.data.orgId)/members/$(request.auth.uid)));
 
-      // 新規作成: ownerId は自分のUID・必須フィールド存在チェック
+      function isOwner() {
+        return request.auth != null && resource.data.ownerId == request.auth.uid;
+      }
+
+      function isMember() {
+        return request.auth != null
+          && exists(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid));
+      }
+
+      // 読み取り: 公開案件 / オーナー / メンバー
+      allow read: if resource.data.isPublic == true
+        || isOwner()
+        || isMember();
+
+      // 新規作成: ownerId は自分・必須フィールド存在チェック
       allow create: if request.auth != null
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.keys().hasAll(['name', 'ownerId', 'isPublic', 'createdAt', 'updatedAt']);
 
       // 更新: オーナーのみ・ownerId 書き換え禁止
-      allow update: if request.auth != null
-        && resource.data.ownerId == request.auth.uid
+      allow update: if isOwner()
         && request.resource.data.ownerId == resource.data.ownerId;
 
       // 削除: オーナーのみ
-      allow delete: if request.auth != null
-        && resource.data.ownerId == request.auth.uid;
+      allow delete: if isOwner();
 
-      match /photos/{photoId} {
-        // 読み取り: 案件が公開かつ写真が公開、またはオーナー、または組織メンバー
-        allow read: if (
-          get(/databases/$(database)/documents/projects/$(projectId)).data.isPublic == true
-          && resource.data.isPublic == true
-        ) || (
-          request.auth != null
-          && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid
-        ) || (
-          request.auth != null
-          && get(/databases/$(database)/documents/projects/$(projectId)).data.orgId != ''
-          && exists(/databases/$(database)/documents/organizations/$(get(/databases/$(database)/documents/projects/$(projectId)).data.orgId)/members/$(request.auth.uid))
+      // メンバーサブコレクション
+      match /members/{memberId} {
+        function projectOwnerId() {
+          return get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId;
+        }
+
+        function isProjectOwner() {
+          return request.auth != null && projectOwnerId() == request.auth.uid;
+        }
+
+        function hasInvitePermission() {
+          return request.auth != null
+            && exists(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid))
+            && get(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid)).data.canInvite == true;
+        }
+
+        // 読み取り: オーナー / 自分のドキュメント
+        allow read: if request.auth != null && (
+          isProjectOwner()
+          || request.auth.uid == memberId
         );
 
-        // 写真追加: オーナーのみ・uploadedBy は自分の UID
-        allow create: if request.auth != null
-          && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid
+        // 招待 (create): オーナー または canInvite メンバー
+        allow create: if isProjectOwner() || hasInvitePermission();
+
+        // 権限変更・削除: オーナーのみ
+        allow update, delete: if isProjectOwner();
+      }
+
+      match /photos/{photoId} {
+        function projectData() {
+          return get(/databases/$(database)/documents/projects/$(projectId)).data;
+        }
+
+        function isProjectOwner() {
+          return request.auth != null && projectData().ownerId == request.auth.uid;
+        }
+
+        function isProjectMember() {
+          return request.auth != null
+            && exists(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid));
+        }
+
+        function canEdit() {
+          return request.auth != null
+            && exists(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid))
+            && get(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid)).data.canEdit == true;
+        }
+
+        // 読み取り: 公開案件の公開写真 / オーナー / メンバー
+        allow read: if (projectData().isPublic == true && resource.data.isPublic == true)
+          || isProjectOwner()
+          || isProjectMember();
+
+        // 写真追加: オーナー または canEdit メンバー・uploadedBy は自分の UID
+        allow create: if (isProjectOwner() || canEdit())
           && request.resource.data.uploadedBy == request.auth.uid;
 
-        // 写真更新・削除: オーナーのみ
-        allow update, delete: if request.auth != null
-          && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid;
+        // 写真更新・削除: オーナー または canEdit メンバー
+        allow update, delete: if isProjectOwner() || canEdit();
       }
     }
   }

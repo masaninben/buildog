@@ -42,25 +42,18 @@ export interface CreateProjectPayload {
   siteAddress?: string
 }
 
-// ===== Organization =====
+// ===== User Plan =====
 
-export type OrgPlan = 'trial' | 'unlimited'
-export type OrgRole = 'owner' | 'member' | 'viewer'
+export type UserPlan = 'trial' | 'unlimited'
 
-export interface Organization {
-  id: string
-  name: string
-  ownerId: string
-  plan: OrgPlan
-  trialEndsAt: string  // ISO date string
-  createdAt: string
-}
+// ===== Project Members =====
 
-export interface OrgMember {
+export interface ProjectMember {
   uid: string
-  role: OrgRole
-  displayName: string
   email: string
+  displayName: string
+  canEdit: boolean
+  canArchive: boolean
+  canInvite: boolean
   joinedAt: string
-  canCreateProject: boolean  // オーナーが明示付与しない限り false
 }

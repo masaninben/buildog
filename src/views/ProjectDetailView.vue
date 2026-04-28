@@ -286,6 +286,70 @@
           <code class="share-url">{{ publicUrl }}</code>
         </div>
       </section>
+
+      <!-- 共有メンバー -->
+      <section class="sharing-card">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">共有メンバー</h2>
+            <p class="section-copy">案件を共有したいアカウントをメールアドレスで招待できます。</p>
+          </div>
+        </div>
+
+        <!-- 招待フォーム (オーナーまたはcanInviteメンバー) -->
+        <form v-if="canInviteMembers" class="invite-form" @submit.prevent="submitInvite">
+          <input
+            v-model="inviteEmail"
+            class="field-input"
+            type="email"
+            placeholder="招待するメールアドレス"
+            :disabled="inviting"
+          />
+          <button class="upload-btn" type="submit" :disabled="inviting || !inviteEmail.trim()">
+            {{ inviting ? '招待中…' : '招待する' }}
+          </button>
+        </form>
+
+        <!-- メンバー一覧 -->
+        <div v-if="projectMembers.length > 0" class="member-list">
+          <div v-for="member in projectMembers" :key="member.uid" class="member-row">
+            <div class="member-info">
+              <span class="member-name">{{ member.displayName || member.email }}</span>
+              <span class="member-email">{{ member.email }}</span>
+            </div>
+            <div class="member-perms">
+              <label class="perm-toggle" :class="{ 'perm-toggle--disabled': !isProjectOwner }">
+                <span class="perm-label">編集</span>
+                <button
+                  class="toggle-switch toggle-switch--sm"
+                  :class="{ on: member.canEdit }"
+                  type="button"
+                  :disabled="!isProjectOwner"
+                  @click="isProjectOwner && toggleMemberPerm(member, 'canEdit')"
+                >
+                  <span class="toggle-thumb" />
+                </button>
+              </label>
+              <label class="perm-toggle" :class="{ 'perm-toggle--disabled': !isProjectOwner }">
+                <span class="perm-label">招待</span>
+                <button
+                  class="toggle-switch toggle-switch--sm"
+                  :class="{ on: member.canInvite }"
+                  type="button"
+                  :disabled="!isProjectOwner"
+                  @click="isProjectOwner && toggleMemberPerm(member, 'canInvite')"
+                >
+                  <span class="toggle-thumb" />
+                </button>
+              </label>
+            </div>
+            <button v-if="isProjectOwner" class="remove-member-btn" type="button" @click="removeMember(member)">
+              ✕
+            </button>
+          </div>
+        </div>
+        <p v-else class="section-copy">まだメンバーはいません。</p>
+      </section>
     </template>
 
     <button v-if="project" class="fab-add-btn" type="button" @click="triggerUploaderFocus">
@@ -375,7 +439,7 @@ import PhotoUpload from '../components/PhotoUpload.vue'
 import { useConfirm } from '../composables/useConfirm'
 import { useToast } from '../composables/useToast'
 import { projectStore } from '../store/projects'
-import { PROJECT_PHOTO_TAG_LABELS, type ProjectPhoto, type ProjectPhotoTag } from '../types'
+import { PROJECT_PHOTO_TAG_LABELS, type ProjectMember, type ProjectPhoto, type ProjectPhotoTag } from '../types'
 
 interface PendingUpload {
   id: string
@@ -490,12 +554,55 @@ const groupedPhotos = computed(() => {
   return groups.filter((group) => group.photos.length > 0)
 })
 
+// 共有メンバー
+const projectMembers = computed(() => projectStore.getMembers(projectId.value))
+const isProjectOwner = computed(() => projectStore.isOwner(projectId.value))
+const canInviteMembers = computed(() => projectStore.canInvite(projectId.value))
+const inviteEmail = ref('')
+const inviting = ref(false)
+
+async function submitInvite() {
+  if (!inviteEmail.value.trim() || inviting.value) return
+  inviting.value = true
+  try {
+    const result = await projectStore.inviteMember(projectId.value, inviteEmail.value)
+    if (result.success) {
+      toastSuccess('メンバーを招待しました')
+      inviteEmail.value = ''
+    } else {
+      toastError(result.error ?? '招待に失敗しました')
+    }
+  } finally {
+    inviting.value = false
+  }
+}
+
+async function toggleMemberPerm(member: ProjectMember, perm: 'canEdit' | 'canInvite') {
+  await projectStore.updateMemberPermissions(projectId.value, member.uid, {
+    [perm]: !member[perm],
+  })
+}
+
+async function removeMember(member: ProjectMember) {
+  const ok = await confirm({
+    title: 'メンバーを削除',
+    message: `${member.displayName || member.email} をこの案件から削除しますか？`,
+    confirmLabel: '削除',
+    danger: true,
+  })
+  if (!ok) return
+  await projectStore.removeMember(projectId.value, member.uid)
+  toastSuccess('メンバーを削除しました')
+}
+
 onMounted(() => {
   projectStore.subscribePhotos(projectId.value)
+  projectStore.subscribeMembers(projectId.value)
 })
 
 onBeforeUnmount(() => {
   projectStore.unsubscribePhotos(projectId.value)
+  projectStore.unsubscribeMembers(projectId.value)
   clearPendingFiles()
   cancelPointerDrag()
 })
@@ -2021,5 +2128,125 @@ function formatDateTime(value: string) {
   .modal-image {
     border-radius: 12px;
   }
+}
+
+/* ===== 共有メンバー ===== */
+.sharing-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.invite-form {
+  display: flex;
+  gap: 10px;
+}
+
+.invite-form .field-input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-input);
+  color: var(--text);
+  padding: 12px 14px;
+  outline: none;
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-faint);
+  border-radius: 14px;
+}
+
+.member-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.member-email {
+  font-size: 12px;
+  color: var(--text-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.member-perms {
+  display: flex;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.perm-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.perm-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.toggle-switch--sm {
+  width: 36px;
+  height: 20px;
+}
+
+.toggle-switch--sm .toggle-thumb {
+  width: 14px;
+  height: 14px;
+  top: 3px;
+  left: 3px;
+}
+
+.toggle-switch--sm.on .toggle-thumb {
+  left: calc(100% - 17px);
+}
+
+.perm-toggle--disabled {
+  opacity: 0.5;
+}
+
+.remove-member-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 999px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

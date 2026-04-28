@@ -38,7 +38,7 @@
           <span class="plan-label">プラン</span>
           <span class="plan-badge" :class="planBadgeClass">{{ planLabel }}</span>
         </div>
-        <template v-if="org?.plan === 'trial' && !isTrialExpired">
+        <template v-if="profile?.plan === 'trial' && !isTrialExpired">
           <div class="trial-bar-wrap">
             <div class="trial-bar">
               <div class="trial-progress" :style="{ width: trialProgressPct + '%' }" />
@@ -52,61 +52,47 @@
         </template>
       </div>
 
-      <!-- オーナーのみ: メンバー管理ボタン -->
-      <button v-if="isOwner" class="members-btn" type="button" @click="showMembersModal = true">
-        メンバー管理
-        <span class="members-count">{{ memberCount }} 人</span>
-      </button>
-
       <button class="signout-btn" @click="handleSignOut">ログアウト</button>
     </div>
   </div>
-
-  <OrgMembersModal v-if="showMembersModal" @close="showMembersModal = false" />
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { signOut } from '../lib/auth'
-import { orgStore } from '../store/org'
 import { projectStore } from '../store/projects'
 import { userProfileStore } from '../store/userProfile'
-import OrgMembersModal from './OrgMembersModal.vue'
 
 defineEmits<{ close: [] }>()
 
 const router = useRouter()
 const profile = computed(() => userProfileStore.profile)
 const projects = computed(() => projectStore.projects)
-const totalPhotos = computed(() => projects.value.reduce((sum, project) => sum + project.photoCount, 0))
-const sharedProjects = computed(() => projects.value.filter((project) => project.isPublic).length)
+const totalPhotos = computed(() => projects.value.reduce((sum, p) => sum + p.photoCount, 0))
+const sharedProjects = computed(() => projects.value.filter((p) => p.isPublic).length)
 const initial = computed(() => (profile.value?.displayName || profile.value?.email || '?').charAt(0).toUpperCase())
 
-const org = computed(() => orgStore.org)
-const trialDays = computed(() => orgStore.trialDaysRemaining)
-const isTrialExpired = computed(() => orgStore.isTrialExpired)
-const isOwner = computed(() => orgStore.isOwner)
-const memberCount = computed(() => orgStore.memberCount)
-const showMembersModal = ref(false)
+const trialDays = computed(() => userProfileStore.trialDaysRemaining)
+const isTrialExpired = computed(() => userProfileStore.isTrialExpired)
 
 const TRIAL_DAYS = 30
 const trialProgressPct = computed(() => {
-  if (!org.value || org.value.plan !== 'trial') return 100
+  if (profile.value?.plan !== 'trial') return 100
   const used = TRIAL_DAYS - trialDays.value
   return Math.min(100, Math.round((used / TRIAL_DAYS) * 100))
 })
 
 const planLabel = computed(() => {
-  if (!org.value) return '—'
-  if (org.value.plan === 'unlimited') return '無制限プラン'
+  if (!profile.value) return '—'
+  if (profile.value.plan === 'unlimited') return '無制限プラン'
   if (isTrialExpired.value) return '試用期間終了'
   return '無料トライアル'
 })
 
 const planBadgeClass = computed(() => {
-  if (!org.value) return ''
-  if (org.value.plan === 'unlimited') return 'plan-badge--active'
+  if (!profile.value) return ''
+  if (profile.value.plan === 'unlimited') return 'plan-badge--active'
   if (isTrialExpired.value) return 'plan-badge--expired'
   return 'plan-badge--trial'
 })
@@ -228,34 +214,6 @@ async function handleSignOut() {
   color: var(--text-sub);
   font-size: 13px;
   line-height: 1.7;
-}
-
-.members-btn {
-  height: 44px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--bg-surface);
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  transition: background 0.12s;
-}
-.members-btn:hover {
-  background: var(--bg-hover);
-}
-.members-count {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--text-muted);
-  background: var(--bg-card);
-  border: 1px solid var(--border-faint);
-  border-radius: 999px;
-  padding: 2px 10px;
 }
 
 .signout-btn {
