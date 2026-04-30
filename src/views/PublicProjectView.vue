@@ -66,6 +66,34 @@
             </div>
           </template>
         </section>
+
+        <!-- ===== Karte 誘導バナー ===== -->
+        <section class="karte-cta">
+          <div class="karte-cta-inner">
+            <span class="karte-cta-owl">🦉</span>
+            <div class="karte-cta-body">
+              <p class="karte-cta-label">施主様へ</p>
+              <h3 class="karte-cta-title">
+                {{ project.boardId ? '担当者からの連絡を確認' : '施工記録をいつでも確認' }}
+              </h3>
+              <p class="karte-cta-sub">
+                {{ project.boardId
+                  ? '掲示板で担当者とやり取りできます。Karteにログインして確認してください。'
+                  : '施主様専用アプリ「Karte」で写真・連絡が一か所に集まります。' }}
+              </p>
+            </div>
+            <a
+              :href="project.boardId ? `/karte/board/${project.boardId}` : '/karte'"
+              class="karte-cta-btn"
+            >
+              Karteを開く
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </a>
+          </div>
+        </section>
+
       </template>
     </main>
 
@@ -549,6 +577,83 @@ function formatDateTime(value: string) {
   font-size: 12px;
   color: rgba(255,255,255,0.48);
   text-align: right;
+}
+
+/* ===== Karte 誘導バナー ===== */
+.karte-cta {
+  margin: 32px 16px 8px;
+}
+
+.karte-cta-inner {
+  background: linear-gradient(135deg, #1b3a5c 0%, #2d6a4f 100%);
+  border-radius: 22px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.karte-cta-owl {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.karte-cta-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.karte-cta-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.karte-cta-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.35;
+}
+
+.karte-cta-sub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.65;
+}
+
+.karte-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 44px;
+  padding: 0 20px;
+  background: #fff;
+  color: #1b3a5c;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  align-self: flex-start;
+  transition: opacity 0.15s;
+}
+.karte-cta-btn:hover { opacity: 0.88; }
+.karte-cta-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (min-width: 520px) {
+  .karte-cta-inner {
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+  }
+  .karte-cta-body { flex: 1; }
+  .karte-cta-btn  { align-self: center; white-space: nowrap; }
 }
 
 /* フッター */
