@@ -1,8 +1,9 @@
 import { reactive, watch } from 'vue'
 import {
   addDoc,
+  arrayRemove,
+  arrayUnion,
   collection,
-  collectionGroup,
   deleteDoc,
   doc,
   getDoc,
@@ -33,7 +34,7 @@ const state = reactive({
 })
 
 let ownedUnsub: Unsubscribe | null = null
-let sharedMembersUnsub: Unsubscribe | null = null
+let userDocUnsub: Unsubscribe | null = null
 const photoUnsubscribes = new Map<string, Unsubscribe>()
 const memberUnsubscribes = new Map<string, Unsubscribe>()
 
@@ -96,6 +97,16 @@ function normalizeProject(id: string, data: Record<string, unknown>): BuildogPro
     coverPhotoId: String(data.coverPhotoId ?? ''),
     photoCount: Number(data.photoCount ?? 0),
     sortOrder: typeof data.sortOrder === 'number' ? data.sortOrder : null,
+    // Karte連携フィールド
+    karteInviteEmail: data.karteInviteEmail ? String(data.karteInviteEmail) : undefined,
+    karteInvitedAt:   data.karteInvitedAt   ? toIsoString(data.karteInvitedAt)   : undefined,
+    karteUserId:      data.karteUserId       ? String(data.karteUserId)       : undefined,
+    karteLinkedAt:    data.karteLinkedAt     ? toIsoString(data.karteLinkedAt)     : undefined,
+    karteStatus:      data.karteStatus       ? (data.karteStatus as BuildogProject['karteStatus']) : undefined,
+    // 掲示板フィールド
+    boardId:              data.boardId              ? String(data.boardId)              : undefined,
+    boardLastMessageAt:   data.boardLastMessageAt   ? toIsoString(data.boardLastMessageAt)   : undefined,
+    boardLastMessageText: data.boardLastMessageText ? String(data.boardLastMessageText) : undefined,
   }
 }
 
@@ -145,8 +156,8 @@ function toIsoString(value: unknown) {
 function clearAll() {
   ownedUnsub?.()
   ownedUnsub = null
-  sharedMembersUnsub?.()
-  sharedMembersUnsub = null
+  userDocUnsub?.()
+  userDocUnsub = null
   photoUnsubscribes.forEach((u) => u())
   photoUnsubscribes.clear()
   memberUnsubscribes.forEach((u) => u())
@@ -175,23 +186,29 @@ watch(
       },
     )
 
-    // 自分がメンバーとして共有されている案件
-    sharedMembersUnsub = onSnapshot(
-      query(collectionGroup(db, 'members'), where('uid', '==', user.uid)),
-      async (snap) => {
-        const projectIds = snap.docs.map((d) => d.ref.parent.parent!.id)
-        if (projectIds.length === 0) {
+    // 自分が共有された案件（users/{uid}.sharedProjectIds で管理）
+    userDocUnsub = onSnapshot(
+      doc(db, 'users', user.uid),
+      async (userSnap) => {
+        const sharedIds: string[] = userSnap.data()?.sharedProjectIds ?? []
+        if (sharedIds.length === 0) {
           sharedProjects = []
           mergeAndSetProjects()
+          state.loaded = true
           return
         }
         const ownedIds = new Set(ownedProjects.map((p) => p.id))
-        const toFetch = projectIds.filter((id) => !ownedIds.has(id))
+        const toFetch = sharedIds.filter((id) => !ownedIds.has(id))
         const fetched = await Promise.all(toFetch.map((id) => getDoc(projectRef(id))))
         sharedProjects = fetched
           .filter((d) => d.exists())
           .map((d) => normalizeProject(d.id, d.data() as Record<string, unknown>))
         mergeAndSetProjects()
+        state.loaded = true
+      },
+      (err) => {
+        console.error('[projectStore] userDoc subscription error:', err)
+        state.loaded = true
       },
     )
   },
@@ -582,22 +599,34 @@ export const projectStore = {
     const existing = state.membersByProject[projectId]?.find((m) => m.uid === inviteeUid)
     if (existing) return { success: false, error: 'すでにメンバーです' }
 
-    await setDoc(doc(projectMembersRef(projectId), inviteeUid), {
-      uid: inviteeUid,
-      email: trimmed,
-      displayName: String(data.displayName ?? email),
-      canEdit: permissions.canEdit,
-      canArchive: permissions.canArchive,
-      canInvite: permissions.canInvite,
-      joinedAt: serverTimestamp(),
-    })
+    await Promise.all([
+      setDoc(doc(projectMembersRef(projectId), inviteeUid), {
+        uid: inviteeUid,
+        email: trimmed,
+        displayName: String(data.displayName ?? email),
+        canEdit: permissions.canEdit,
+        canArchive: permissions.canArchive,
+        canInvite: permissions.canInvite,
+        joinedAt: serverTimestamp(),
+      }),
+      // 招待されたユーザーの sharedProjectIds に追加
+      updateDoc(doc(db, 'users', inviteeUid), {
+        sharedProjectIds: arrayUnion(projectId),
+      }),
+    ])
 
     return { success: true }
   },
 
   async removeMember(projectId: string, memberUid: string): Promise<void> {
     if (!this.isOwner(projectId)) return
-    await deleteDoc(doc(projectMembersRef(projectId), memberUid))
+    await Promise.all([
+      deleteDoc(doc(projectMembersRef(projectId), memberUid)),
+      // 削除されたユーザーの sharedProjectIds から除去
+      updateDoc(doc(db, 'users', memberUid), {
+        sharedProjectIds: arrayRemove(projectId),
+      }),
+    ])
   },
 
   async updateMemberPermissions(

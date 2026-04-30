@@ -5,7 +5,11 @@ service cloud.firestore {
     // ユーザープロフィール（plan・trialEndsAt含む）
     match /users/{uid} {
       allow read: if request.auth != null;
+      // 自分自身は全フィールド書き込み可
       allow write: if request.auth != null && request.auth.uid == uid;
+      // 他の認証済みユーザーは sharedProjectIds フィールドのみ更新可（招待時の書き込み）
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sharedProjectIds']);
     }
 
     // 運営管理者（Firebase Console で手動作成、クライアントは読み取りのみ）
@@ -75,6 +79,7 @@ service cloud.firestore {
         allow update, delete: if isProjectOwner();
       }
 
+      // 写真サブコレクション
       match /photos/{photoId} {
         function projectData() {
           return get(/databases/$(database)/documents/projects/$(projectId)).data;
@@ -106,6 +111,40 @@ service cloud.firestore {
 
         // 写真更新・削除: オーナー または canEdit メンバー
         allow update, delete: if isProjectOwner() || canEdit();
+      }
+    }
+
+    // ===== 連絡掲示板 =====
+    match /boards/{boardId} {
+
+      function isActiveMember() {
+        let member = get(/databases/$(database)/documents/boards/$(boardId)/members/$(request.auth.uid)).data;
+        return request.auth != null && member != null && member.status == 'active';
+      }
+
+      function isBoardManager() {
+        let member = get(/databases/$(database)/documents/boards/$(boardId)/members/$(request.auth.uid)).data;
+        return request.auth != null && member != null && member.role == 'manager' && member.status == 'active';
+      }
+
+      // boardDoc: activeメンバーのみ読み取り / 認証ユーザーなら作成可 / 管理者のみ更新
+      allow read:   if isActiveMember();
+      allow create: if request.auth != null;
+      allow update: if isBoardManager() || isActiveMember();
+
+      match /messages/{messageId} {
+        allow read:   if isActiveMember();
+        allow create: if isActiveMember();
+        // readBy 追記のみ許可
+        allow update: if isActiveMember();
+      }
+
+      match /members/{uid} {
+        allow read:    if isActiveMember();
+        // 作成: 認証済みユーザーなら可（掲示板初期化時を含む）
+        allow create:  if request.auth != null;
+        // 更新・削除: 管理者のみ
+        allow update, delete: if isBoardManager();
       }
     }
   }
