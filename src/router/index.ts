@@ -2,10 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { watch } from 'vue'
 import { authState } from '../lib/auth'
 import ProjectListView from '../views/ProjectListView.vue'
+import { karteRoutes } from './karte'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    ...karteRoutes,
     {
       path: '/login',
       name: 'login',

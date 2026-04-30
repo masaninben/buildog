@@ -23,7 +23,13 @@ useTheme()
 
 const route = useRoute()
 const showAccountModal = ref(false)
-const showToolbar = computed(() => !!authState.user && route.name !== 'public-project' && route.name !== 'login')
+const isKarteRoute = computed(() => route.path.startsWith('/karte'))
+const showToolbar = computed(() =>
+  !!authState.user &&
+  !isKarteRoute.value &&
+  route.name !== 'public-project' &&
+  route.name !== 'login',
+)
 
 watch(() => authState.user, (user) => {
   if (!user) showAccountModal.value = false
