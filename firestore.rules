@@ -33,10 +33,20 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid));
       }
 
-      // 読み取り: 公開案件 / オーナー / メンバー
+      // 掲示板のアクティブメンバー（施主など）も案件ドキュメントを読める
+      function isActiveBoardMember() {
+        let boardId = resource.data.boardId;
+        return boardId != null
+          && request.auth != null
+          && exists(/databases/$(database)/documents/boards/$(boardId)/members/$(request.auth.uid))
+          && get(/databases/$(database)/documents/boards/$(boardId)/members/$(request.auth.uid)).data.status == 'active';
+      }
+
+      // 読み取り: 公開案件 / オーナー / メンバー / 掲示板アクティブメンバー
       allow read: if resource.data.isPublic == true
         || isOwner()
-        || isMember();
+        || isMember()
+        || isActiveBoardMember();
 
       // 新規作成: ownerId は自分・必須フィールド存在チェック
       allow create: if request.auth != null
@@ -100,10 +110,20 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid)).data.canEdit == true;
         }
 
-        // 読み取り: 公開案件の公開写真 / オーナー / メンバー
+        // 掲示板メンバーが公開写真を読めるか確認
+        function isActiveBoardMemberForPhotos() {
+          let boardId = projectData().boardId;
+          return boardId != null
+            && request.auth != null
+            && exists(/databases/$(database)/documents/boards/$(boardId)/members/$(request.auth.uid))
+            && get(/databases/$(database)/documents/boards/$(boardId)/members/$(request.auth.uid)).data.status == 'active';
+        }
+
+        // 読み取り: 公開案件の公開写真 / オーナー / メンバー / 掲示板メンバー（公開写真のみ）
         allow read: if (projectData().isPublic == true && resource.data.isPublic == true)
           || isProjectOwner()
-          || isProjectMember();
+          || isProjectMember()
+          || (isActiveBoardMemberForPhotos() && resource.data.isPublic == true);
 
         // 写真追加: オーナー または canEdit メンバー・uploadedBy は自分の UID
         allow create: if (isProjectOwner() || canEdit())
