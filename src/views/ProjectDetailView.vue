@@ -15,6 +15,22 @@
     <div v-else-if="!project" class="state-card">案件が見つかりません</div>
 
     <template v-else-if="project">
+
+      <!-- 連絡掲示板バー（常時表示） -->
+      <div v-if="hasBoard" class="board-bar" @click="openBoard">
+        <span class="board-bar-icon">💬</span>
+        <div class="board-bar-body">
+          <span class="board-bar-title">
+            連絡掲示板
+            <span v-if="boardUnread" class="unread-dot" />
+          </span>
+          <span v-if="project.boardLastMessageText" class="board-bar-preview">{{ project.boardLastMessageText }}</span>
+        </div>
+        <svg class="board-bar-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </div>
+
       <section class="upload-card">
         <div class="section-head">
           <div>
@@ -287,6 +303,19 @@
         </div>
       </section>
 
+      <!-- 連絡掲示板（未作成時のみ表示） -->
+      <section v-if="!hasBoard" class="board-card">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">💬 連絡掲示板</h2>
+            <p class="section-copy">メンバー間の連絡や進捗をまとめて管理できます。</p>
+          </div>
+        </div>
+        <button class="create-board-btn" :disabled="boardCreating" @click="submitCreateBoard">
+          {{ boardCreating ? '作成中…' : '掲示板を作成する' }}
+        </button>
+      </section>
+
       <!-- 共有メンバー -->
       <section class="sharing-card">
         <div class="section-head">
@@ -430,7 +459,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { jsPDF } from 'jspdf'
 import QRCode from 'qrcode'
 import { useRoute, useRouter } from 'vue-router'
@@ -439,7 +468,10 @@ import PhotoUpload from '../components/PhotoUpload.vue'
 import { useConfirm } from '../composables/useConfirm'
 import { useToast } from '../composables/useToast'
 import { projectStore } from '../store/projects'
-import { PROJECT_PHOTO_TAG_LABELS, type ProjectMember, type ProjectPhoto, type ProjectPhotoTag } from '../types'
+import { PROJECT_PHOTO_TAG_LABELS, type ProjectMember, type ProjectPhoto, type ProjectPhotoTag, type BoardMemberDoc } from '../types'
+import { createBoard, subscribeBoardMembers, hasBoardUnread, markBoardVisited } from '../services/board'
+
+import { authState } from '../lib/auth'
 
 interface PendingUpload {
   id: string
@@ -557,6 +589,58 @@ const groupedPhotos = computed(() => {
 // 共有メンバー
 const projectMembers = computed(() => projectStore.getMembers(projectId.value))
 const isProjectOwner = computed(() => projectStore.isOwner(projectId.value))
+
+// ===== 掲示板 =====
+const boardMembers  = ref<BoardMemberDoc[]>([])
+const boardCreating = ref(false)
+let   unsubBoardMembers: (() => void) | null = null
+
+const boardId     = computed(() => project.value?.boardId)
+const hasBoard    = computed(() => !!boardId.value)
+const boardUnread = computed(() =>
+  boardId.value ? hasBoardUnread(boardId.value, project.value?.boardLastMessageAt) : false,
+)
+
+function openBoard() {
+  if (!boardId.value) return
+  markBoardVisited(boardId.value)
+  router.push({ name: 'board-chat', params: { projectId: projectId.value, boardId: boardId.value } })
+}
+
+async function submitCreateBoard() {
+  if (boardCreating.value) return
+  const myUid  = authState.user?.uid ?? ''
+  const myName = authState.user?.displayName ?? 'メンバー'
+  boardCreating.value = true
+  try {
+    const newBoardId = await createBoard({
+      projectId:   projectId.value,
+      projectName: project.value?.name ?? '',
+      karteUserId: project.value?.karteUserId,
+      members:     [{ uid: myUid, displayName: myName }],
+      managerUid:  myUid,
+    })
+    toastSuccess('掲示板を作成しました')
+    router.push({ name: 'board-chat', params: { projectId: projectId.value, boardId: newBoardId } })
+  } catch (e) {
+    console.error(e)
+    toastError('掲示板の作成に失敗しました')
+  } finally {
+    boardCreating.value = false
+  }
+}
+
+// 掲示板メンバー購読（boardIdが確定後）
+watch(boardId, (id) => {
+  unsubBoardMembers?.()
+  if (id) {
+    unsubBoardMembers = subscribeBoardMembers(id, (members) => {
+      boardMembers.value = members
+    })
+  } else {
+    boardMembers.value = []
+  }
+}, { immediate: true })
 const canInviteMembers = computed(() => projectStore.canInvite(projectId.value))
 const inviteEmail = ref('')
 const inviting = ref(false)
@@ -603,6 +687,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   projectStore.unsubscribePhotos(projectId.value)
   projectStore.unsubscribeMembers(projectId.value)
+  unsubBoardMembers?.()
   clearPendingFiles()
   cancelPointerDrag()
 })
@@ -2126,8 +2211,185 @@ function formatDateTime(value: string) {
   }
 
   .modal-image {
+    aspect-ratio: 16 / 9;
+    max-height: 200px;
     border-radius: 12px;
   }
+
+  .modal-section .field-textarea {
+    max-height: 72px;
+  }
+
+  .modal-actions {
+    gap: 6px;
+  }
+}
+
+/* ===== 共有メンバー ===== */
+/* ===== 連絡掲示板バー ===== */
+.board-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--accent, #1e5aae);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+}
+
+.board-bar:hover {
+  opacity: 0.88;
+}
+
+.board-bar-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.board-bar-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.board-bar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.board-bar-preview {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.board-bar-arrow {
+  width: 18px;
+  height: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  flex-shrink: 0;
+}
+
+/* ===== 連絡掲示板（未作成カード） ===== */
+.board-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.open-board-btn {
+  position: relative;
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid var(--accent, #1e5aae);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent, #1e5aae);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  background: #e45;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.create-board-btn {
+  height: 42px;
+  border-radius: 14px;
+  border: 2px dashed var(--border-accent, rgba(30,90,174,0.24));
+  background: transparent;
+  color: var(--accent, #1e5aae);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.create-board-btn:hover {
+  background: var(--accent-bg, rgba(30,90,174,0.07));
+}
+
+.board-preview {
+  background: var(--bg-surface, #edf3f8);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-sub, rgba(19,39,72,0.72));
+  line-height: 1.55;
+}
+
+.board-preview-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.board-members-preview {
+  font-size: 12px;
+  color: var(--text-muted, rgba(19,39,72,0.52));
+}
+
+/* 掲示板作成モーダル */
+.board-member-select {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.board-member-select-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.self-badge {
+  font-size: 11px;
+  background: var(--accent-bg, rgba(30,90,174,0.1));
+  color: var(--accent, #1e5aae);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-weight: 600;
+}
+
+.board-client-row {
+  padding-top: 10px;
+  border-top: 1px solid var(--border, rgba(24,49,91,0.12));
+}
+
+.board-client-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 /* ===== 共有メンバー ===== */

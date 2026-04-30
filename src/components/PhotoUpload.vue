@@ -272,23 +272,26 @@ async function compressImage(file: File): Promise<File> {
 }
 
 @media (max-width: 1024px) {
+  /* スマホ/タブレットではドラッグ領域を非表示にしてボタンだけ表示 */
   .photo-upload {
-    padding: 16px;
-    border-style: solid;
+    padding: 0;
+    border: none;
+    background: none;
+    border-radius: 0;
   }
 
-  .upload-visual--compact {
-    justify-items: flex-start;
-    text-align: left;
-    padding: 0;
+  .upload-visual {
+    display: none;
   }
 
   .upload-actions {
     align-items: stretch;
+    flex-direction: row;
+    gap: 8px;
   }
 
   .helper-text {
-    width: 100%;
+    display: none;
   }
 }
 
