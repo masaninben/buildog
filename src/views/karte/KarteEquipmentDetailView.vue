@@ -95,40 +95,39 @@
       </form>
 
       <!-- 読み取りビュー -->
-      <div v-else class="info-list">
+      <!-- 読み取りビュー -->
+      <div v-else class="info-view">
 
-        <div v-if="item.maker" class="info-row">
-          <span class="info-key">メーカー</span>
-          <span class="info-val">{{ item.maker }}</span>
-        </div>
-
-        <div v-if="item.modelNumber" class="info-row">
-          <span class="info-key">型番</span>
-          <span class="info-val">{{ item.modelNumber }}</span>
-        </div>
-
-        <div v-if="item.installedDate" class="info-row">
-          <span class="info-key">設置年月</span>
-          <span class="info-val">{{ formatMonth(item.installedDate) }}</span>
-        </div>
-
-        <div v-if="item.warrantyExpiry" class="info-row">
-          <span class="info-key">保証期限</span>
-          <span class="info-val">
-            {{ formatMonth(item.warrantyExpiry) }}
-            <span v-if="isWarrantyExpired(item.warrantyExpiry)" class="expired-badge">期限切れ</span>
-            <span v-else-if="isWarrantySoon(item.warrantyExpiry)" class="soon-badge">まもなく期限</span>
-          </span>
-        </div>
-
-        <div v-if="item.memo" class="info-row info-row--memo">
-          <span class="info-key">メモ</span>
-          <span class="info-val memo-val">{{ item.memo }}</span>
-        </div>
-
-        <div class="info-row">
-          <span class="info-key">登録日</span>
-          <span class="info-val">{{ formatDate(item.createdAt) }}</span>
+        <!-- 基本情報テーブル -->
+        <div class="info-list">
+          <div v-if="item.maker" class="info-row">
+            <span class="info-key">メーカー</span>
+            <span class="info-val">{{ item.maker }}</span>
+          </div>
+          <div v-if="item.modelNumber" class="info-row">
+            <span class="info-key">型番</span>
+            <span class="info-val">{{ item.modelNumber }}</span>
+          </div>
+          <div v-if="item.installedDate" class="info-row">
+            <span class="info-key">設置年月</span>
+            <span class="info-val">{{ formatMonth(item.installedDate) }}</span>
+          </div>
+          <div v-if="item.warrantyExpiry" class="info-row">
+            <span class="info-key">保証期限</span>
+            <span class="info-val">
+              {{ formatMonth(item.warrantyExpiry) }}
+              <span v-if="isWarrantyExpired(item.warrantyExpiry)" class="expired-badge">期限切れ</span>
+              <span v-else-if="isWarrantySoon(item.warrantyExpiry)" class="soon-badge">まもなく期限</span>
+            </span>
+          </div>
+          <div v-if="item.memo" class="info-row info-row--memo">
+            <span class="info-key">メモ</span>
+            <span class="info-val memo-val">{{ item.memo }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">登録日</span>
+            <span class="info-val">{{ formatDate(item.createdAt) }}</span>
+          </div>
         </div>
 
         <!-- 寿命プログレス -->
@@ -146,8 +145,33 @@
           </div>
         </div>
 
+        <!-- 関連イベント -->
+        <div v-if="relatedEvents.length > 0" class="related-section">
+          <p class="related-section-title">関連イベント</p>
+          <div class="related-event-list">
+            <div
+              v-for="ev in relatedEvents"
+              :key="ev.eventId"
+              class="related-event-row"
+              @click="router.push({ name: 'karte-event-detail', params: { id: ev.eventId } })"
+            >
+              <span class="rel-ev-emoji">{{ TIMELINE_EVENT_TYPE_EMOJI[ev.eventType] }}</span>
+              <div class="rel-ev-info">
+                <div class="rel-ev-title">{{ ev.title }}</div>
+                <div class="rel-ev-date">{{ formatDate(ev.eventDate) }}</div>
+              </div>
+              <svg class="rel-ev-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
         <!-- 削除 -->
-        <button class="delete-btn" @click="confirmDelete">この設備を削除</button>
+        <div class="delete-wrap">
+          <button class="delete-btn" @click="confirmDelete">この設備を削除</button>
+        </div>
+
       </div>
 
     </div>
@@ -176,23 +200,26 @@ import { ref, computed, reactive, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { authState } from '../../lib/auth'
 import { getEquipment, updateEquipment, deleteEquipment } from '../../services/equipment'
+import { getEventsByEquipmentId } from '../../services/events'
 import {
   EQUIPMENT_CATEGORY_LABELS,
   EQUIPMENT_LIFESPAN_YEARS,
   EQUIPMENT_STATUS_LABELS,
+  TIMELINE_EVENT_TYPE_EMOJI,
 } from '../../types'
-import type { KarteEquipment, EquipmentCategory, EquipmentStatus } from '../../types'
+import type { KarteEquipment, KarteTimelineEvent, EquipmentCategory, EquipmentStatus } from '../../types'
 
 const router = useRouter()
 const route  = useRoute()
 const equipmentId = route.params.id as string
 
-const item    = ref<KarteEquipment | null>(null)
-const loading = ref(true)
-const editing = ref(false)
-const saving  = ref(false)
-const deleting = ref(false)
+const item           = ref<KarteEquipment | null>(null)
+const loading        = ref(true)
+const editing        = ref(false)
+const saving         = ref(false)
+const deleting       = ref(false)
 const showDeleteModal = ref(false)
+const relatedEvents  = ref<KarteTimelineEvent[]>([])
 
 // ===== カテゴリ絵文字 =====
 const CATEGORY_EMOJI_MAP: Record<EquipmentCategory, string> = {
@@ -367,8 +394,12 @@ onMounted(async () => {
   const uid = authState.user?.uid
   if (!uid) { loading.value = false; return }
 
-  const eq = await getEquipment(uid, equipmentId)
+  const [eq, events] = await Promise.all([
+    getEquipment(uid, equipmentId),
+    getEventsByEquipmentId(uid, equipmentId),
+  ])
   item.value = eq
+  relatedEvents.value = events
   if (eq) populateForm(eq)
   loading.value = false
 })
@@ -508,9 +539,20 @@ watch(editing, (val) => {
 }
 .warn-icon { font-size: 14px; flex-shrink: 0; }
 
-/* ===== 情報リスト ===== */
+/* ===== 読み取りビュー ===== */
+.info-view {
+  padding: 16px 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ===== 基本情報テーブル ===== */
 .info-list {
-  padding: 16px 20px;
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(27,58,92,0.06);
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -569,7 +611,7 @@ watch(editing, (val) => {
 
 /* ===== 寿命バー ===== */
 .lifespan-section {
-  margin-top: 20px;
+  margin-top: 12px;
   background: #fff;
   border-radius: 16px;
   padding: 16px;
@@ -601,9 +643,11 @@ watch(editing, (val) => {
 .fill--orange { background: #f4a261; }
 .fill--red    { background: #c0392b; }
 
+/* ===== 削除ラップ ===== */
+.delete-wrap { margin-top: 24px; margin-bottom: 16px; }
+
 /* ===== 削除ボタン ===== */
 .delete-btn {
-  margin-top: 32px;
   width: 100%;
   height: 44px;
   border: 1.5px solid rgba(192,57,43,0.3);
@@ -778,4 +822,48 @@ watch(editing, (val) => {
 .modal-fade-leave-active { transition: opacity 0.2s ease; }
 .modal-fade-enter-from,
 .modal-fade-leave-to { opacity: 0; }
+
+/* ===== 関連イベント ===== */
+.related-section { margin-top: 12px; }
+
+.related-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(27,58,92,0.45);
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.related-event-list {
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(27,58,92,0.06);
+}
+
+.related-event-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(27,58,92,0.05);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s;
+}
+.related-event-row:last-child { border-bottom: none; }
+.related-event-row:active { background: rgba(27,58,92,0.03); }
+
+.rel-ev-emoji { font-size: 18px; flex-shrink: 0; width: 26px; text-align: center; }
+
+.rel-ev-info { flex: 1; min-width: 0; }
+
+.rel-ev-title {
+  font-size: 14px; font-weight: 700; color: #1b3a5c;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.rel-ev-date { font-size: 11px; color: rgba(27,58,92,0.45); margin-top: 2px; }
+
+.rel-ev-arrow { width: 15px; height: 15px; color: rgba(27,58,92,0.25); flex-shrink: 0; }
 </style>

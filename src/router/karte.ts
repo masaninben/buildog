@@ -26,6 +26,24 @@ export const karteRoutes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'karte' },
   },
   {
+    path: '/karte/events',
+    name: 'karte-event-list',
+    component: () => import('../views/karte/KarteEventListView.vue'),
+    meta: { requiresAuth: true, layout: 'karte' },
+  },
+  {
+    path: '/karte/events/new',
+    name: 'karte-event-new',
+    component: () => import('../views/karte/KarteEventNewView.vue'),
+    meta: { requiresAuth: true, layout: 'karte' },
+  },
+  {
+    path: '/karte/events/:id',
+    name: 'karte-event-detail',
+    component: () => import('../views/karte/KarteEventDetailView.vue'),
+    meta: { requiresAuth: true, layout: 'karte' },
+  },
+  {
     path: '/karte/trouble',
     name: 'karte-trouble',
     component: () => import('../views/karte/KarteTroubleTopView.vue'),

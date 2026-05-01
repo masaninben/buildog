@@ -181,6 +181,50 @@ export type TimelineEventType =
   | 'photo'          // 写真
   | 'other'          // その他
 
+export const TIMELINE_EVENT_TYPE_LABELS: Record<TimelineEventType, string> = {
+  move_in:        '入居',
+  construction:   '工事',
+  repair:         '修理',
+  inspection:     '点検',
+  replacement:    '交換',
+  purchase:       '購入・設置',
+  color_decision: '色決め',
+  memo:           'メモ',
+  photo:          '写真',
+  other:          'その他',
+}
+
+export const TIMELINE_EVENT_TYPE_EMOJI: Record<TimelineEventType, string> = {
+  move_in:        '🏠',
+  construction:   '🔨',
+  repair:         '🔧',
+  inspection:     '🔍',
+  replacement:    '🔄',
+  purchase:       '📦',
+  color_decision: '🎨',
+  memo:           '📝',
+  photo:          '📷',
+  other:          '📋',
+}
+
+// イベント一覧フィルターカテゴリ
+export type EventFilterCategory =
+  | 'all'       // 全て
+  | 'exterior'  // 外壁・屋根
+  | 'equipment' // 設備
+  | 'interior'  // 内装
+  | 'plumbing'  // 水回り
+  | 'other'     // その他
+
+export const EVENT_FILTER_CATEGORY_LABELS: Record<EventFilterCategory, string> = {
+  all:       '全て',
+  exterior:  '外壁・屋根',
+  equipment: '設備',
+  interior:  '内装',
+  plumbing:  '水回り',
+  other:     'その他',
+}
+
 // ===== Karte：困り事緊急度 =====
 
 export type TroubleUrgency = 'urgent' | 'soon' | 'research'
@@ -229,6 +273,7 @@ export interface KarteEquipment {
 export interface KarteTimelineEvent {
   eventId:              string
   eventType:            TimelineEventType
+  filterCategory:       EventFilterCategory
   title:                string
   eventDate:            string
   relatedEquipmentIds:  string[]
