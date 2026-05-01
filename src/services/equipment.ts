@@ -89,7 +89,7 @@ export interface CreateEquipmentPayload {
 
 export async function createEquipment(uid: string, payload: CreateEquipmentPayload): Promise<string> {
   const ref = await addDoc(col(uid), {
-    ...payload,
+    ...dropUndefined(payload),
     photoUrls:  [],
     createdAt:  serverTimestamp(),
     updatedAt:  serverTimestamp(),
@@ -104,9 +104,16 @@ export async function updateEquipment(
   payload: Partial<CreateEquipmentPayload>,
 ): Promise<void> {
   await updateDoc(docRef(uid, equipmentId), {
-    ...payload,
+    ...dropUndefined(payload),
     updatedAt: serverTimestamp(),
   })
+}
+
+// ===== ユーティリティ =====
+function dropUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as Partial<T>
 }
 
 // ===== 設備削除 =====

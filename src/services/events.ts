@@ -71,7 +71,7 @@ export interface CreateEventPayload {
 
 export async function createEvent(uid: string, payload: CreateEventPayload): Promise<string> {
   const ref = await addDoc(col(uid), {
-    ...payload,
+    ...dropUndefined(payload),
     photoUrls: [],
     source:    'manual',
     createdAt: serverTimestamp(),
@@ -86,7 +86,7 @@ export async function updateEvent(
   payload: Partial<CreateEventPayload>,
 ): Promise<void> {
   await updateDoc(docRef(uid, eventId), {
-    ...payload,
+    ...dropUndefined(payload),
     updatedAt: serverTimestamp(),
   })
 }
@@ -94,6 +94,14 @@ export async function updateEvent(
 // ===== 削除 =====
 export async function deleteEvent(uid: string, eventId: string): Promise<void> {
   await deleteDoc(docRef(uid, eventId))
+}
+
+// ===== ユーティリティ =====
+// Firestore は undefined 値を受け付けないため除去する
+function dropUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as Partial<T>
 }
 
 // ===== 内部変換 =====
