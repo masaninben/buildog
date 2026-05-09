@@ -1,5 +1,5 @@
 // ===== Buildog Suite 共通：設備カテゴリコード =====
-// Buildog・Buildog Palette・Buildog Karteで統一して使用
+// Buildog・Buildog Karteで使用
 export type EquipmentCategory =
   | 'exterior_wall'      // 外壁
   | 'roof'               // 屋根
@@ -43,13 +43,6 @@ export interface BuildogProject {
   karteUserId?:       string        // 紐付いたKarteユーザーUID
   karteLinkedAt?:     string        // 連携完了日時（ISO string）
   karteStatus?:       KarteStatus   // 連携状態
-
-  // --- Buildog Palette連携フィールド ---
-  // 注: 次回セッションで実装予定。型定義のみ先行追加
-  paletteProjectId?:  string        // Palette案件ID
-  palettePatternUrl?: string        // 決定パターン画像URL
-  paletteColorName?:  string        // カラー名
-  paletteColorHex?:   string        // HEXコード（例: #FFFFFF）
 
   // --- 工程カレンダーフィールド ---
   // 注: 工程カレンダー実装時に使用予定。型定義のみ先行追加
@@ -176,7 +169,6 @@ export type TimelineEventType =
   | 'inspection'     // 点検
   | 'replacement'    // 交換
   | 'purchase'       // 購入・設置
-  | 'color_decision' // 色決め（Palette連携）
   | 'memo'           // メモ
   | 'photo'          // 写真
   | 'other'          // その他
@@ -188,7 +180,6 @@ export const TIMELINE_EVENT_TYPE_LABELS: Record<TimelineEventType, string> = {
   inspection:     '点検',
   replacement:    '交換',
   purchase:       '購入・設置',
-  color_decision: '色決め',
   memo:           'メモ',
   photo:          '写真',
   other:          'その他',
@@ -201,7 +192,6 @@ export const TIMELINE_EVENT_TYPE_EMOJI: Record<TimelineEventType, string> = {
   inspection:     '🔍',
   replacement:    '🔄',
   purchase:       '📦',
-  color_decision: '🎨',
   memo:           '📝',
   photo:          '📷',
   other:          '📋',
@@ -281,7 +271,7 @@ export interface KarteTimelineEvent {
   memo?:                string
   contractor?:          string       // 施工会社名
   cost?:                number       // 費用（円）
-  source:               'manual' | 'buildog' | 'palette'
+  source:               'manual' | 'buildog'
   buildogProjectId?:    string
   createdAt:            string
 }
